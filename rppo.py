@@ -1,57 +1,99 @@
-def char_to_ascii(input_string):
-    ascii_list = [ord(char) for char in input_string]
-    return ascii_list
+# This is the Finished RPPO Code
 
-def ascii_to_char(ascii_list):
-    char_list = [chr(ascii_val) for ascii_val in ascii_list]
-    return ''.join(char_list)
+def generate_blocks(source_block, num_iterations):
+    intermediate_blocks = []
+    intermediate_blocks.append(source_block.copy())
 
-def recursive_paired_parity_operation(ascii_val):
-    binary_val = bin(ascii_val)[2:].zfill(8)
-    parity_bit = binary_val.count('1') % 2
-    encrypted_val = (ascii_val << 1) | parity_bit
-    return encrypted_val
+    def generate_block_recursive(block, remaining_iterations):
+        if remaining_iterations == 0:
+            return
+        new_block = block.copy()
+        for j in range(len(block)):
+            xor_result = 0
+            for k in range(j + 1):
+                xor_result ^= block[k]
+            new_block[j] = xor_result
+        intermediate_blocks.append(new_block)
+        generate_block_recursive(new_block, remaining_iterations - 1)
 
-def recursive_paired_parity_encrypt(ascii_values, num_steps):
-    encrypted_list = []
-    for ascii_val in ascii_values:
-        print(f"Encryption Step 0: ASCII value {ascii_val}")
-        for step in range(1, num_steps + 1):
-            ascii_val = recursive_paired_parity_operation(ascii_val)
-            print(f"Encryption Step {step}: ASCII value {ascii_val}")
-        encrypted_list.append(ascii_val)
-    return encrypted_list
+    generate_block_recursive(source_block, num_iterations)
 
-def recursive_paired_parity_decrypt(encrypted_values, num_steps):
-    decrypted_list = []
-    for encrypted_val in encrypted_values:
-        print(f"Decryption Step 0: ASCII value {encrypted_val}")
-        ascii_val = encrypted_val
-        for step in range(1, num_steps + 1):
-            ascii_val = ascii_val >> 1
-            print(f"Decryption Step {step}: ASCII value {ascii_val}")
-        decrypted_list.append(ascii_val)
-    return decrypted_list
+    return intermediate_blocks
 
-input_string = input("Enter a string: ")
-ascii_values = char_to_ascii(input_string)
-half_length = len(ascii_values) // 2
-encryption_steps = half_length
-print("\nASCII Values:", ascii_values)
-print("\nEncryption:")
-encrypted_values = recursive_paired_parity_encrypt(ascii_values, encryption_steps)
+def encrypt(source_block, block_number, num_iterations):
+    intermediate_blocks = generate_blocks(source_block, num_iterations)
+    return intermediate_blocks[block_number]
 
-encrypted_string = ascii_to_char(encrypted_values)
-print("\nOriginal String:", input_string)
-print("\nASCII Values:", ascii_values)
-print("\nEncrypted String:", encrypted_string)
-print("\nEncrypted ASCII Values:", encrypted_values)
+def decrypt(final_block, block_number, num_iterations):
+    if block_number >= len(final_block):
+        return []
 
-# Decryption
-decryption_steps = encryption_steps
-print("\nDecryption:")
-decrypted_values = recursive_paired_parity_decrypt(encrypted_values, decryption_steps)
-decrypted_string = ascii_to_char(decrypted_values)
+    decrypted_blocks = []
 
-print("\nDecrypted String:", decrypted_string)
-print("\nDecrypted ASCII Values:", decrypted_values)
+    def generate_block_recursive(block, remaining_iterations):
+        if remaining_iterations == 0:
+            return
+        new_block = block.copy()
+        for j in range(len(block)):
+            xor_result = 0
+            for k in range(j + 1):
+                xor_result ^= block[k]
+            new_block[j] = xor_result
+        decrypted_blocks.append(new_block)
+        generate_block_recursive(new_block, remaining_iterations - 1)
+
+    generate_block_recursive(final_block, num_iterations - block_number)
+
+    return decrypted_blocks
+
+def main():
+    size = int(input("Enter the size of the source block: "))
+    source_block = []
+    for i in range(size):
+        bit = int(input(f"Enter bit {i + 1} (0 or 1) for the source block: "))
+        source_block.append(bit)
+
+    if size in [2, 4, 8, 16]:
+        num_iterations = size
+    elif size % 2 == 0 and size <= 16:
+        num_iterations = 16
+    else:
+        num_iterations = size
+
+    block_number = int(input("Enter the block number of encryption: "))
+
+    intermediate_blocks = generate_blocks(source_block, num_iterations)
+
+   
+    source_block = source_block
+
+  
+    print(f'Source Block: {source_block}')
+
+    print()
+
+
+    for i, block in enumerate(intermediate_blocks[1:block_number + 1], start=1):
+        print(f'Encrypted Block {i}: {block}')
+
+    print()
+
+ 
+    encrypted_block = encrypt(source_block, block_number, num_iterations)
+    print(f'Encrypted : {encrypted_block}')
+
+    print()
+
+  
+    decrypted_blocks = decrypt(encrypted_block, block_number, num_iterations)
+
+
+    for i, block in enumerate(decrypted_blocks):
+        print(f'Decrypted Block {i + block_number + 1}: {block}')
+
+    print()
+
+    print(f'Decrypted : {decrypted_blocks[-1]}')
+
+if __name__ == "__main__":
+    main()
