@@ -1,3 +1,5 @@
+#This is the rppo code using padded bits 
+
 import math
 
 def generate_blocks(source_block, num_iterations):

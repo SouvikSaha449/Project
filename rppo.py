@@ -1,4 +1,4 @@
-# This is the Finished RPPO Code
+# This is the RPPO Code of bits
 
 def generate_blocks(source_block, num_iterations):
     intermediate_blocks = []
