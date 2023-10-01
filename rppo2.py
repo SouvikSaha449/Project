@@ -87,7 +87,7 @@ def main():
     decrypted_blocks = decrypt(encrypted_block, block_number, num_iterations)
 
     for i, block in enumerate(decrypted_blocks):
-        print(f'Decrypted Block {i + block_number + 1}: {block}\n')
+        print(f'\nDecrypted Block {i + block_number + 1}: {block}\n')
 
     decrypted_string = binary_to_string(decrypted_blocks[-1])
     print(f'\nDecrypted ASCII Values: {[ord(char) for char in decrypted_string]}')
