@@ -1,4 +1,4 @@
-#This is the rppo code using padded bits 
+
 
 import math
 
