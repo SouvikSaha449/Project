@@ -1,5 +1,3 @@
-
-
 import math
 
 def generate_blocks(source_block, num_iterations):
