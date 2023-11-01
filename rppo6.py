@@ -55,8 +55,6 @@ def string_to_binary(string):
         binary_values.extend([int(bit) for bit in binary_value])
     return binary_values
 
-
-
 def binary_to_string(binary_values):
     # Convert binary values to bytes
     bytes_list = [binary_values[i:i+8] for i in range(0, len(binary_values), 8)]
@@ -65,49 +63,48 @@ def binary_to_string(binary_values):
     # Convert bytes to the original UTF-8 encoded string
     return bytes_data.decode('utf-8', errors='ignore')
 
-
-
 def main(input_file, encrypted_output_file, decrypted_output_file):
     try:
-        with open(input_file, 'r') as file:
-            with open(encrypted_output_file, 'w') as encrypted_file:
-                with open(decrypted_output_file, 'w') as decrypted_file:
-                    for line in file:
-                        input_string = line.strip()  # Read the input string from the file
+        with open(input_file, 'r', encoding='utf-8') as file:
+            input_string = file.read()  # Read the entire input file as a single string
 
-                        source_block = string_to_binary(input_string)
-                        size = len(source_block)
+            source_block = string_to_binary(input_string)
+            size = len(source_block)
 
-                        num_iterations = 2 ** math.ceil(math.log2(size))
-                        block_number = int(input("Enter the block number for encryption: "))  # Prompt for block number
+            num_iterations = 2 ** math.ceil(math.log2(size))
+            block_number = int(input("Enter the block number for encryption: "))  # Prompt for block number
 
-                        intermediate_blocks = generate_blocks(source_block, num_iterations)
+            intermediate_blocks = generate_blocks(source_block, num_iterations)
 
-                        # Print the intermediate blocks
-                        for i, block in enumerate(intermediate_blocks[1:block_number + 1], start=1):
-                            print(f'Encrypted Block {i}: {block}')
+            # Print the intermediate blocks
+            for i, block in enumerate(intermediate_blocks[1:block_number + 1], start=1):
+                print(f'Encrypted Block {i}: {block}')
 
-                        # Encryption
-                        encrypted_block = encrypt(source_block, block_number, num_iterations)
-                        encrypted_string = binary_to_string(encrypted_block)
-                        encrypted_file.write(encrypted_string + '\n')
-                        
-                        # Print the encrypted block
-                        print(f'Encrypted Block {block_number}: {encrypted_block}')
+            # Encryption
+            encrypted_block = encrypt(source_block, block_number, num_iterations)
+            encrypted_string = binary_to_string(encrypted_block)
 
-                        # Decryption
-                        decrypted_blocks = decrypt(encrypted_block, block_number, num_iterations)
-                        decrypted_string = binary_to_string(decrypted_blocks[-1])
-                        decrypted_file.write(decrypted_string + '\n')
+            with open(encrypted_output_file, 'w', encoding='utf-8') as encrypted_file:
+                encrypted_file.write(encrypted_string)
+            
+            # Print the encrypted block
+            print(f'Encrypted Block {block_number}: {encrypted_block}')
 
-                        # Print the decrypted blocks
-                        for i, block in enumerate(decrypted_blocks):
-                            print(f'Decrypted Block {i + block_number + 1}: {block}')
+            # Decryption
+            decrypted_blocks = decrypt(encrypted_block, block_number, num_iterations)
+            decrypted_string = binary_to_string(decrypted_blocks[-1])
 
-                        # Print progress
-                        print(f'Processed line: {input_string}')
-                        print(f'Encrypted String: {encrypted_string}')
-                        print(f'Decrypted String: {decrypted_string}')
+            with open(decrypted_output_file, 'w', encoding='utf-8') as decrypted_file:
+                decrypted_file.write(decrypted_string)
+
+            # Print the decrypted blocks
+            for i, block in enumerate(decrypted_blocks):
+                print(f'Decrypted Block {i + block_number + 1}: {block}')
+
+            # Print progress
+            print(f'Processed input from file: {input_file}')
+            print(f'Encrypted String: {encrypted_string}')
+            print(f'Decrypted String: {decrypted_string}')
 
         print("Encryption and decryption completed.")
     except FileNotFoundError:
