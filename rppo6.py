@@ -105,6 +105,7 @@ def main(input_file, encrypted_output_file, decrypted_output_file):
             print(f'Processed input from file: {input_file}')
             print(f'Encrypted String: {encrypted_string}')
             print(f'Decrypted String: {decrypted_string}')
+            print(f'Encrypted Block {block_number}: {encrypted_block}')
 
         print("Encryption and decryption completed.")
     except FileNotFoundError:
