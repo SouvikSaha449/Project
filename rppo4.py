@@ -1,102 +1,130 @@
 import math
+import time
 import base64
+import sys
 
-def generate_blocks(source_block, num_iterations):
-    intermediate_blocks = []
-    intermediate_blocks.append(source_block.copy())
+new_depth_limit = 100000
+sys.setrecursionlimit(new_depth_limit)
 
-    def generate_block_recursive(block, remaining_iterations):
-        if remaining_iterations == 0:
-            return
-        new_block = block.copy()
-        for j in range(len(block)):
-            xor_result = 0
-            for k in range(j + 1):
-                xor_result ^= block[k]
-            new_block[j] = xor_result
-        intermediate_blocks.append(new_block)
-        generate_block_recursive(new_block, remaining_iterations - 1)
+def generate_blocks(source_block, num_iterations, target_block_number):
+    intermediate_blocks = [source_block.copy()]
 
-    generate_block_recursive(source_block, num_iterations)
+    def generate_block_recursive(block, remaining_iterations, operation_count=0):
+        nonlocal intermediate_blocks
+        nonlocal target_block_number
 
-    return intermediate_blocks
+        if remaining_iterations == 0 or len(intermediate_blocks) > target_block_number:
+            return operation_count
+
+        xor_result = 0
+        for i in range(len(block)):
+            xor_result ^= block[i]
+            block[i] = xor_result
+            operation_count += 1
+
+        intermediate_blocks.append(block.copy())
+        return generate_block_recursive(block, remaining_iterations - 1, operation_count)
+
+    total_operations = generate_block_recursive(source_block, num_iterations)
+    return intermediate_blocks, total_operations
 
 def encrypt(source_block, block_number, num_iterations):
-    intermediate_blocks = generate_blocks(source_block, num_iterations)
-    return intermediate_blocks[block_number]
+    intermediate_blocks, total_operations = generate_blocks(source_block, num_iterations, block_number)
+    if block_number < len(intermediate_blocks):
+        return intermediate_blocks[block_number], total_operations
+    else:
+        return [], 0
 
 def decrypt(final_block, block_number, num_iterations):
     if block_number >= len(final_block):
-        return []
+        return [], 0
 
-    decrypted_blocks = []
+    decrypted_blocks = [final_block.copy()]
 
-    def generate_block_recursive(block, remaining_iterations):
+    def generate_block_recursive(block, remaining_iterations, operation_count=0):
         if remaining_iterations == 0:
-            return
-        new_block = block.copy()
-        for j in range(len(block)):
-            xor_result = 0
-            for k in range(j + 1):
-                xor_result ^= block[k]
-            new_block[j] = xor_result
-        decrypted_blocks.append(new_block)
-        generate_block_recursive(new_block, remaining_iterations - 1)
+            return operation_count
 
-    generate_block_recursive(final_block, num_iterations - block_number)
+        xor_result = 0
+        for i in range(len(block)):
+            xor_result ^= block[i]
+            block[i] = xor_result
+            operation_count += 1
 
-    return decrypted_blocks
+        decrypted_blocks.append(block.copy())
+        return generate_block_recursive(block, remaining_iterations - 1, operation_count)
+
+    total_operations = generate_block_recursive(final_block, num_iterations - block_number)
+    return decrypted_blocks, total_operations
 
 def string_to_binary(string):
-    utf8_bytes = string.encode('utf-8')
-    binary_values = []
-    for byte in utf8_bytes:
-        binary_value = format(byte, '08b')  # Convert byte to 8-bit binary
-        binary_values.extend([int(bit) for bit in binary_value])
-    return binary_values
+    return (int(bit) for byte in string.encode('utf-8') for bit in f"{byte:08b}")
 
 def binary_to_string(binary_values):
-    bytes_list = [binary_values[i:i+8] for i in range(0, len(binary_values), 8)]
-    utf8_bytes = bytearray([int(''.join(map(str, byte)), 2) for byte in bytes_list])
-    
-    try:
-        return utf8_bytes.decode('utf-8')
-    except UnicodeDecodeError:
-        # Handle invalid characters by ignoring them or replacing them
-        return utf8_bytes.decode('utf-8', errors='ignore')
+    if len(binary_values) % 8 != 0:
+        raise ValueError("Binary values length must be a multiple of 8 for proper decoding.")
 
+    bytes_data = bytes(int(''.join(map(str, binary_values[i:i+8])), 2) for i in range(0, len(binary_values), 8))
+    return bytes_data.decode('utf-8', errors='ignore')
 
 def main():
-    input_string = input("Enter a string to encrypt: ")
-    source_block = string_to_binary(input_string)
-    size = len(source_block)
+    input_file = 'input.txt'  # Change to the actual input file path
+    encrypted_output_file = 'encrypted.txt'  # Change to the desired encrypted output file path
+    decrypted_output_file = 'decrypted.txt'  # Change to the desired decrypted output file path
 
-    # Calculate the number of iterations based on the size of the source block
+    # Read the input from a file
+    with open(input_file, 'r', encoding='utf-8') as file:
+        input_string = file.read()
+
+    # Convert the input string to the source block
+    source_block = list(string_to_binary(input_string))
+
+    size = len(source_block)  # Size of the source block in bits
     num_iterations = 2 ** math.ceil(math.log2(size))
 
-    block_number = int(input("Enter the block number of encryption: "))
+    # Prompt for the block number
+    block_number = int(input("Enter the block number for encryption: "))
 
-    intermediate_blocks = generate_blocks(source_block, num_iterations)
+    # Encryption
+    start_time = time.time()
+    encrypted_block, encryption_operations = encrypt(source_block, block_number, num_iterations)
+    end_time = time.time()
+    encryption_time = end_time - start_time
 
-    print(f'Source String: {input_string}')
-    print(f'Source Block (Binary): {source_block}\n')
+    # Encode the encrypted data as base64
+    encrypted_base64 = base64.b64encode(bytes(encrypted_block)).decode('utf-8')
 
-    for i, block in enumerate(intermediate_blocks[1:block_number + 1], start=1):
-        print(f'Encrypted Block {i}: {block}\n')
+    # Write the encrypted base64 string to the encrypted output file
+    with open(encrypted_output_file, 'w', encoding='utf-8') as encrypted_file:
+        encrypted_file.write(encrypted_base64)
 
-    encrypted_block = encrypt(source_block, block_number, num_iterations)
-    encrypted_string = binary_to_string(encrypted_block)
-    print(f'Encrypted String: {encrypted_string}')
-    
-    decrypted_blocks = decrypt(encrypted_block, block_number, num_iterations)
+    # Decryption
+    start_time = time.time()
+    decrypted_blocks, decryption_operations = decrypt(encrypted_block, block_number, num_iterations)
+    end_time = time.time()
+    decryption_time = end_time - start_time
 
-    for i, block in enumerate(decrypted_blocks):
-        print(f'Decrypted Block {i + block_number + 1}: {block}\n')
+    # Convert the decrypted binary data to a string
+    decrypted_string = binary_to_string(bytes(decrypted_blocks[-1]))
 
-    print(f'Source String: {input_string}')
-    print(f'Encrypted String: {encrypted_string}')
-    decrypted_string = binary_to_string(decrypted_blocks[-1])
-    print(f'Decrypted String: {decrypted_string}')
+    # Write the decrypted string to the decrypted output file
+    with open(decrypted_output_file, 'w', encoding='utf-8') as decrypted_file:
+        decrypted_file.write(decrypted_string)
+
+    print(f'Size of Source Block: {size} bits')
+    print(f'Encryption Time: {encryption_time:.4f} seconds')
+    print(f'Decryption Time: {decryption_time:.4f} seconds')
+
+    print(f'Number of XOR Operations (Encryption): {encryption_operations}')
+    print(f'Number of XOR Operations (Decryption): {decryption_operations}')
+
+    print(f'Encrypted Block {block_number}: {encrypted_block}')
+
+    print("Encryption and decryption completed.")
+    print("Encrypted Base64 String:")
+    print(encrypted_base64)
+    print("Decrypted String:")
+    print(decrypted_string)
 
 if __name__ == "__main__":
     main()
