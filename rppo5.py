@@ -1,6 +1,10 @@
 import math
 import time
 import base64
+import sys
+
+new_depth_limit = 10000000 
+sys.setrecursionlimit(new_depth_limit)
 
 def generate_blocks(source_block, num_iterations, operation_counts):
     intermediate_blocks = [source_block.copy()]
@@ -65,6 +69,10 @@ def string_to_binary(string):
     return binary_values
 
 def binary_to_string(binary_values):
+    # Ensure the length of binary_values is a multiple of 8
+    if len(binary_values) % 8 != 0:
+        raise ValueError("Binary values length must be a multiple of 8 for proper decoding.")
+
     # Convert binary values to bytes
     bytes_list = [binary_values[i:i+8] for i in range(0, len(binary_values), 8)]
     bytes_data = bytearray([int(''.join(map(str, byte)), 2) for byte in bytes_list])
@@ -118,18 +126,17 @@ def main():
     with open(decrypted_output_file, 'w', encoding='utf-8') as decrypted_file:
         decrypted_file.write(decrypted_string)
 
+    print("Encryption and decryption completed.")
+    print("Encrypted Base64 String:")
+    print(encrypted_base64)
+    print("Decrypted String:")
+    print(decrypted_string)
     print(f'Size of Source Block: {size} bits')
     print(f'Encryption Time: {encryption_time:.4f} seconds')
     print(f'Decryption Time: {decryption_time:.4f} seconds')
 
     print(f'Number of XOR Operations (Encryption): {encryption_operations}')
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
-
-    print("Encryption and decryption completed.")
-    print("Encrypted Base64 String:")
-    print(encrypted_base64)
-    print("Decrypted String:")
-    print(decrypted_string)
 
 if __name__ == "__main__":
     main()
