@@ -6,12 +6,12 @@ import sys
 new_depth_limit = 100000
 sys.setrecursionlimit(new_depth_limit)
 
-def generate_blocks(source_block, num_iterations, target_block_number):
-    intermediate_blocks = [source_block.copy()]
+def generate_blocks(source_block, num_iterations, target_block_number, intermediate_blocks=None):
+    if intermediate_blocks is None:
+        intermediate_blocks = [source_block]
 
     def generate_block_recursive(block, remaining_iterations, operation_count=0):
         nonlocal intermediate_blocks
-        nonlocal target_block_number
 
         if remaining_iterations == 0 or len(intermediate_blocks) > target_block_number:
             return operation_count
@@ -19,14 +19,21 @@ def generate_blocks(source_block, num_iterations, target_block_number):
         xor_result = 0
         for i in range(len(block)):
             xor_result ^= block[i]
-            block[i] = xor_result
             operation_count += 1
+            block[i] = xor_result
 
-        intermediate_blocks.append(block.copy())
+        intermediate_blocks.append(block)
+        revert_changes(block)  # Revert changes to reuse the block instance
         return generate_block_recursive(block, remaining_iterations - 1, operation_count)
 
-    total_operations = generate_block_recursive(source_block, num_iterations)
+    total_operations = generate_block_recursive(source_block.copy(), num_iterations)
     return intermediate_blocks, total_operations
+
+def revert_changes(block):
+    xor_result = 0
+    for i in range(len(block) - 1, 0, -1):
+        xor_result ^= block[i]
+        block[i] = xor_result
 
 def encrypt(source_block, block_number, num_iterations):
     intermediate_blocks, total_operations = generate_blocks(source_block, num_iterations, block_number)
@@ -39,22 +46,25 @@ def decrypt(final_block, block_number, num_iterations):
     if block_number >= len(final_block):
         return [], 0
 
-    decrypted_blocks = [final_block.copy()]
+    decrypted_blocks = [final_block]
 
     def generate_block_recursive(block, remaining_iterations, operation_count=0):
+        nonlocal decrypted_blocks
+
         if remaining_iterations == 0:
             return operation_count
 
         xor_result = 0
         for i in range(len(block)):
             xor_result ^= block[i]
-            block[i] = xor_result
             operation_count += 1
+            block[i] = xor_result
 
-        decrypted_blocks.append(block.copy())
+        decrypted_blocks.append(block)
+        revert_changes(block)  # Revert changes to reuse the block instance
         return generate_block_recursive(block, remaining_iterations - 1, operation_count)
 
-    total_operations = generate_block_recursive(final_block, num_iterations - block_number)
+    total_operations = generate_block_recursive(final_block.copy(), num_iterations - block_number)
     return decrypted_blocks, total_operations
 
 def string_to_binary(string):
@@ -68,7 +78,7 @@ def binary_to_string(binary_values):
     return bytes_data.decode('utf-8', errors='ignore')
 
 def main():
-    input_file = 'input.txt'  # Change to the actual input file path
+    input_file = 'input2.txt'  # Change to the actual input file path
     encrypted_output_file = 'encrypted.txt'  # Change to the desired encrypted output file path
     decrypted_output_file = 'decrypted.txt'  # Change to the desired decrypted output file path
 
@@ -118,13 +128,8 @@ def main():
     print(f'Number of XOR Operations (Encryption): {encryption_operations}')
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
 
-    print(f'Encrypted Block {block_number}: {encrypted_block}')
-
     print("Encryption and decryption completed.")
-    print("Encrypted Base64 String:")
-    print(encrypted_base64)
-    print("Decrypted String:")
-    print(decrypted_string)
+
 
 if __name__ == "__main__":
     main()
