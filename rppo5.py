@@ -2,6 +2,7 @@ import math
 import time
 import base64
 import sys
+import numpy as np
 
 new_depth_limit = 100000
 sys.setrecursionlimit(new_depth_limit)
@@ -10,19 +11,20 @@ def generate_blocks(source_block, num_iterations, target_block_number, intermedi
     if intermediate_blocks is None:
         intermediate_blocks = [source_block]
 
-    def generate_block_recursive(block, remaining_iterations, operation_count=0):
-        nonlocal intermediate_blocks
+    intermediate_blocks_len = len(intermediate_blocks)
 
-        if remaining_iterations == 0 or len(intermediate_blocks) > target_block_number:
+    def generate_block_recursive(block, remaining_iterations, operation_count=0):
+        nonlocal intermediate_blocks, intermediate_blocks_len
+
+        if remaining_iterations == 0 or intermediate_blocks_len > target_block_number:
             return operation_count
 
-        xor_result = 0
-        for i in range(len(block)):
-            xor_result ^= block[i]
-            block[i] = xor_result
-            operation_count += 1
+        xor_result = np.bitwise_xor.reduce(block, axis=0)
+        block = np.bitwise_xor(block, xor_result)
+        operation_count += len(block)
 
         intermediate_blocks.append(block)
+        intermediate_blocks_len += 1
         return generate_block_recursive(block, remaining_iterations - 1, operation_count)
 
     total_operations = generate_block_recursive(source_block, num_iterations)
@@ -41,19 +43,20 @@ def decrypt(final_block, block_number, num_iterations):
 
     decrypted_blocks = [final_block]
 
+    intermediate_blocks_len = len(decrypted_blocks)
+
     def generate_block_recursive(block, remaining_iterations, operation_count=0):
-        nonlocal decrypted_blocks
+        nonlocal decrypted_blocks, intermediate_blocks_len
 
         if remaining_iterations == 0:
             return operation_count
 
-        xor_result = 0
-        for i in range(len(block)):
-            xor_result ^= block[i]
-            block[i] = xor_result
-            operation_count += 1
+        xor_result = np.bitwise_xor.reduce(block, axis=0)
+        block = np.bitwise_xor(block, xor_result)
+        operation_count += len(block)
 
         decrypted_blocks.append(block)
+        intermediate_blocks_len += 1
         return generate_block_recursive(block, remaining_iterations - 1, operation_count)
 
     total_operations = generate_block_recursive(final_block, num_iterations - block_number)
@@ -79,7 +82,7 @@ def main():
         input_string = file.read()
 
     # Convert the input string to the source block
-    source_block = list(string_to_binary(input_string))
+    source_block = np.array(list(string_to_binary(input_string)))
 
     size = len(source_block)  # Size of the source block in bits
     num_iterations = 2 ** math.ceil(math.log2(size))
@@ -120,6 +123,7 @@ def main():
     print(f'Number of XOR Operations (Encryption): {encryption_operations}')
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
 
+    print("Encryption and decryption completed.")
 
 if __name__ == "__main__":
     main()
