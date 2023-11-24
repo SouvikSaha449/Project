@@ -1,39 +1,22 @@
-import math
 import time
 import base64
-import sys
+import numpy as np
 
-new_depth_limit = 100000
-sys.setrecursionlimit(new_depth_limit)
+def generate_blocks(source_block, num_iterations, target_block_number):
+    intermediate_blocks = [source_block]
+    intermediate_blocks_len = 1
 
-def generate_blocks(source_block, num_iterations, target_block_number, intermediate_blocks=None):
-    if intermediate_blocks is None:
-        intermediate_blocks = [source_block]
-
-    def generate_block_recursive(block, remaining_iterations, operation_count=0):
-        nonlocal intermediate_blocks
-
-        if remaining_iterations == 0 or len(intermediate_blocks) > target_block_number:
-            return operation_count
-
-        xor_result = 0
-        for i in range(len(block)):
-            xor_result ^= block[i]
-            operation_count += 1
-            block[i] = xor_result
-
+    for _ in range(num_iterations):
+        xor_result = np.bitwise_xor.reduce(intermediate_blocks[-1], axis=0)
+        block = np.bitwise_xor(intermediate_blocks[-1], xor_result)
         intermediate_blocks.append(block)
-        revert_changes(block)  # Revert changes to reuse the block instance
-        return generate_block_recursive(block, remaining_iterations - 1, operation_count)
+        intermediate_blocks_len += 1
 
-    total_operations = generate_block_recursive(source_block.copy(), num_iterations)
+        if intermediate_blocks_len > target_block_number:
+            break
+
+    total_operations = num_iterations * len(source_block)
     return intermediate_blocks, total_operations
-
-def revert_changes(block):
-    xor_result = 0
-    for i in range(len(block) - 1, 0, -1):
-        xor_result ^= block[i]
-        block[i] = xor_result
 
 def encrypt(source_block, block_number, num_iterations):
     intermediate_blocks, total_operations = generate_blocks(source_block, num_iterations, block_number)
@@ -43,32 +26,18 @@ def encrypt(source_block, block_number, num_iterations):
         return [], 0
 
 def decrypt(final_block, block_number, num_iterations):
-    if block_number >= len(final_block):
-        return [], 0
-
     decrypted_blocks = [final_block]
 
-    def generate_block_recursive(block, remaining_iterations, operation_count=0):
-        nonlocal decrypted_blocks
-
-        if remaining_iterations == 0:
-            return operation_count
-
-        xor_result = 0
-        for i in range(len(block)):
-            xor_result ^= block[i]
-            operation_count += 1
-            block[i] = xor_result
-
+    for _ in range(num_iterations - block_number):
+        xor_result = np.bitwise_xor.reduce(decrypted_blocks[-1], axis=0)
+        block = np.bitwise_xor(decrypted_blocks[-1], xor_result)
         decrypted_blocks.append(block)
-        revert_changes(block)  # Revert changes to reuse the block instance
-        return generate_block_recursive(block, remaining_iterations - 1, operation_count)
 
-    total_operations = generate_block_recursive(final_block.copy(), num_iterations - block_number)
+    total_operations = (num_iterations - block_number) * len(final_block)
     return decrypted_blocks, total_operations
 
 def string_to_binary(string):
-    return (int(bit) for byte in string.encode('utf-8') for bit in f"{byte:08b}")
+    return np.array([int(bit) for byte in string.encode('utf-8') for bit in f"{byte:08b}"])
 
 def binary_to_string(binary_values):
     if len(binary_values) % 8 != 0:
@@ -87,10 +56,10 @@ def main():
         input_string = file.read()
 
     # Convert the input string to the source block
-    source_block = list(string_to_binary(input_string))
+    source_block = string_to_binary(input_string)
 
     size = len(source_block)  # Size of the source block in bits
-    num_iterations = 2 ** math.ceil(math.log2(size))
+    num_iterations = 2 ** np.ceil(np.log2(size)).astype(int)
 
     # Prompt for the block number
     block_number = int(input("Enter the block number for encryption: "))
@@ -129,7 +98,6 @@ def main():
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
 
     print("Encryption and decryption completed.")
-
 
 if __name__ == "__main__":
     main()
