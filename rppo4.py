@@ -15,7 +15,7 @@ def generate_blocks(source_block, num_iterations, target_block_number):
         if intermediate_blocks_len > target_block_number:
             break
 
-    total_operations = num_iterations * len(source_block)
+    total_operations = num_iterations * np.int64(len(source_block))
     return intermediate_blocks, total_operations
 
 def encrypt(source_block, block_number, num_iterations):
@@ -23,7 +23,7 @@ def encrypt(source_block, block_number, num_iterations):
     if block_number < len(intermediate_blocks):
         return intermediate_blocks[block_number], total_operations
     else:
-        return [], 0
+        return [], np.int64(0)
 
 def decrypt(final_block, block_number, num_iterations):
     decrypted_blocks = [final_block]
@@ -33,7 +33,7 @@ def decrypt(final_block, block_number, num_iterations):
         block = np.bitwise_xor(decrypted_blocks[-1], xor_result)
         decrypted_blocks.append(block)
 
-    total_operations = (num_iterations - block_number) * len(final_block)
+    total_operations = np.int64(num_iterations - block_number) * np.int64(len(final_block))
     return decrypted_blocks, total_operations
 
 def string_to_binary(string):
@@ -47,7 +47,7 @@ def binary_to_string(binary_values):
     return bytes_data.decode('utf-8', errors='ignore')
 
 def main():
-    input_file = 'input2.txt'  # Change to the actual input file path
+    input_file = 'input5.txt'  # Change to the actual input file path
     encrypted_output_file = 'encrypted.txt'  # Change to the desired encrypted output file path
     decrypted_output_file = 'decrypted.txt'  # Change to the desired decrypted output file path
 
@@ -90,7 +90,10 @@ def main():
     with open(decrypted_output_file, 'w', encoding='utf-8') as decrypted_file:
         decrypted_file.write(decrypted_string)
 
+    # Print additional information
+    total_blocks_generated = len(encrypted_block)
     print(f'Size of Source Block: {size} bits')
+    print(f'Total Blocks Generated: {total_blocks_generated}')
     print(f'Encryption Time: {encryption_time:.4f} seconds')
     print(f'Decryption Time: {decryption_time:.4f} seconds')
 
@@ -101,3 +104,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
