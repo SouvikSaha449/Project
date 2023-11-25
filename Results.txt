@@ -1,0 +1,96 @@
+PS E:\MCA\Project> python rppo5.py
+Enter the block number for encryption: 10000
+Size of Source Block: 53392 bits
+Encryption Time: 1.5766 seconds
+Decryption Time: 35.9877 seconds
+Number of XOR Operations (Encryption): 533920000
+Number of XOR Operations (Decryption): 2965178112
+Encryption and decryption completed.
+
+Enter the block number for encryption: 10000
+Size of Source Block: 53392 bits
+Total Blocks Generated: 53392
+Encryption Time: 1.7914 seconds
+Decryption Time: 28.1554 seconds
+Number of XOR Operations (Encryption): 3499098112
+Number of XOR Operations (Decryption): 2965178112
+Encryption and decryption completed
+
+PS E:\MCA\Project> python rppo4.py
+Enter the block number for encryption: 10000
+Size of Source Block: 26784 bits
+Total Blocks Generated: 26784
+Encryption Time: 1.0247 seconds
+Decryption Time: 2.0481 seconds
+Number of XOR Operations (Encryption): 877658112
+Number of XOR Operations (Decryption): 609818112
+Encryption and decryption completed.
+
+PS E:\MCA\Project> python rppo5.py
+Enter the block number for encryption: 10000
+Size of Source Block: 26784 bits
+Encryption Time: 0.9304 seconds
+Decryption Time: 2.1953 seconds
+Number of XOR Operations (Encryption): 267840000
+Number of XOR Operations (Decryption): 609818112
+Encryption and decryption completed.
+
+PS E:\MCA\Project> python rppo4.py
+Enter the block number for encryption: 10000
+Size of Source Block: 22000 bits
+Total Blocks Generated: 22000
+Encryption Time: 0.8752 seconds
+Decryption Time: 1.7867 seconds
+Number of XOR Operations (Encryption): 720896000
+Number of XOR Operations (Decryption): 500896000
+Encryption and decryption completed.
+
+PS E:\MCA\Project> python rppo5.py
+Enter the block number for encryption: 10000
+Size of Source Block: 22000 bits
+Encryption Time: 0.7401 seconds
+Decryption Time: 1.7869 seconds
+Number of XOR Operations (Encryption): 220000000
+Number of XOR Operations (Decryption): 500896000
+Encryption and decryption completed.
+
+PS E:\MCA\Project> python rppo4.py
+Enter the block number for encryption: 10000
+Size of Source Block: 31536 bits
+Total Blocks Generated: 31536
+Encryption Time: 1.3189 seconds
+Decryption Time: 2.3925 seconds
+Number of XOR Operations (Encryption): 1033371648
+Number of XOR Operations (Decryption): 718011648
+Encryption and decryption completed.
+
+PS E:\MCA\Project> python rppo5.py
+Enter the block number for encryption: 10000
+Size of Source Block: 31536 bits
+Encryption Time: 1.0604 seconds
+Decryption Time: 2.4249 seconds
+Number of XOR Operations (Encryption): 315360000
+Number of XOR Operations (Decryption): 718011648
+Encryption and decryption completed.
+
+PS E:\MCA\Project> python rppo4.py
+Enter the block number for encryption: 10000
+Size of Source Block: 39728 bits
+Total Blocks Generated: 39728
+Encryption Time: 1.3876 seconds
+Decryption Time: 18.0352 seconds
+Number of XOR Operations (Encryption): 2603614208
+Number of XOR Operations (Decryption): 2206334208
+Encryption and decryption completed.
+
+PS E:\MCA\Project> python rppo5.py
+Enter the block number for encryption: 10000
+Size of Source Block: 39728 bits
+Encryption Time: 1.1903 seconds
+Decryption Time: 20.0962 seconds
+Number of XOR Operations (Encryption): 397280000
+Number of XOR Operations (Decryption): 2206334208
+Encryption and decryption completed.
+
+
+
