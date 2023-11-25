@@ -73,7 +73,7 @@ def binary_to_string(binary_values):
     return bytes_data.decode('utf-8', errors='ignore')
 
 def main():
-    input_file = 'input2.txt'  # Change to the actual input file path
+    input_file = 'input5.txt'  # Change to the actual input file path
     encrypted_output_file = 'encrypted.txt'  # Change to the desired encrypted output file path
     decrypted_output_file = 'decrypted.txt'  # Change to the desired decrypted output file path
 
