@@ -2,6 +2,7 @@ import math
 import time
 import base64
 import sys
+import os
 import numpy as np
 
 new_depth_limit = 100000
@@ -95,12 +96,17 @@ def main():
     encrypted_output_file = 'encrypted.txt'
     decrypted_output_file = 'decrypted.txt'
 
+    # Calculate input file size
+    input_file_size = os.path.getsize(input_file) / 1024  # Size in KB
+
     with open(input_file, 'r', encoding='utf-8') as file:
         input_string = file.read()
 
     source_block = np.array(list(string_to_binary(input_string)))
 
-    size_kb = source_block.nbytes / 1024
+    # Calculate source block size
+    source_block_size = source_block.nbytes / 1024  # Size in KB
+
     num_iterations = 2 ** math.ceil(math.log2(len(source_block)))
 
     block_number = int(input("Enter the block number for encryption: "))
@@ -117,22 +123,22 @@ def main():
     with open(encrypted_output_file, 'w', encoding='utf-8') as encrypted_file:
         encrypted_file.write(encrypted_base64)
 
+    # Print the encrypted binary block
+    print(f'Encrypted Binary Block: {encrypted_block}')
+
     start_time = time.time()
     decrypted_blocks, decryption_operations = decrypt(
         encrypted_block, block_number, num_iterations)
     end_time = time.time()
     decryption_time = end_time - start_time
 
-    decrypted_string = binary_to_string(
-        bytes(decrypted_blocks[-1]))
-
     with open(decrypted_output_file, 'w', encoding='utf-8') as decrypted_file:
-        decrypted_file.write(decrypted_string)
+        decrypted_file.write(binary_to_string(bytes(decrypted_blocks[-1])))
 
-    print(f'Size of Source Block: {size_kb:.2f} KB')
+    print(f'Input File Size: {input_file_size:.2f} KB')
+    print(f'Source Block Size: {source_block_size:.2f} KB')
     print(f'Encryption Time: {encryption_time:.4f} seconds')
     print(f'Decryption Time: {decryption_time:.4f} seconds')
-
     print(f'Number of XOR Operations (Encryption): {encryption_operations}')
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
 
