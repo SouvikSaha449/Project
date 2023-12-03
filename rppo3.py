@@ -1,5 +1,3 @@
-
-
 import math
 
 def generate_blocks(source_block, num_iterations):
@@ -73,24 +71,28 @@ def binary_to_string(binary_values):
     chars = [binary_string[i:i+8] for i in range(0, len(binary_string), 8)]
     return ''.join([chr(int(char, 2)) for char in chars])
 
+def read_file_content(file_path):
+    with open(file_path, 'r', encoding='utf-8') as file:
+        content = file.read()
+    return content
+
 def main():
-    input_string = input("Enter a string to encrypt: ")
-    source_block = string_to_binary(input_string)
+    input_file_path = 'input6.txt'  # Change to the actual input file path
+    source_string = read_file_content(input_file_path)
+
+    source_block = string_to_binary(source_string)
     size = len(source_block)
  
     num_iterations = 2 ** math.ceil(math.log2(size))
 
     block_number = int(input("Enter the block number of encryption: "))
 
-
     padded_source_block, _ = pad_source_block(source_block, num_iterations)
 
     intermediate_blocks = generate_blocks(padded_source_block, num_iterations)
 
-    print(f'Source String: {input_string}')
-    print(f'\nSource ASCII Values: {[ord(char) for char in input_string]}\n')
+    print(f'Source String: {source_string}')
     print(f'\nSize of Padded Source Block: {len(padded_source_block)}')
-
     print(f'Source Block (Binary): {padded_source_block}\n')
 
     for i, block in enumerate(intermediate_blocks[1:block_number + 1], start=1):
@@ -98,19 +100,18 @@ def main():
 
     encrypted_block, _ = encrypt(padded_source_block, block_number, num_iterations)
     encrypted_string = binary_to_string(encrypted_block)
-    print(f'\nEncrypted ASCII Values: {[ord(char) for char in encrypted_string]}\n')
-    print(f'\nEncrypted String: {encrypted_string}')
     
+    # Print the encrypted block separately
+    print(f'Encrypted Block (Binary): {encrypted_block}\n')
+    print(f'Encrypted String: {encrypted_string}')
+
     decrypted_blocks = decrypt(encrypted_block, block_number, num_iterations)
 
     for i, block in enumerate(decrypted_blocks):
-        print(f'\nDecrypted Block {i + block_number + 1}: {block}\n')
+        print(f'Decrypted Block {i + block_number + 1}: {block}\n')
 
     decrypted_string = binary_to_string(decrypted_blocks[-1])
-    print(f'\nDecrypted ASCII Values: {[ord(char) for char in decrypted_string]}')
-    print(f'\nDecrypted String: {decrypted_string}')
-
-    
+    print(f'Decrypted String: {decrypted_string}')
 
 if __name__ == "__main__":
     main()
