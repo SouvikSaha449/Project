@@ -104,12 +104,15 @@ def binary_to_string(binary_values):
 
 
 def main():
-    input_file = 'input4.txt'  # Change to the actual input file path
+    input_file = 'input.txt'  # Change to the actual input file path
     encrypted_output_file = 'encrypted.txt'
     decrypted_output_file = 'decrypted.txt'
 
     # Calculate input file size
     input_file_size = os.path.getsize(input_file) / 1024  # Size in KB
+
+    print(f'Input File Size: {input_file_size:.2f} KB')
+    
 
     with open(input_file, 'r', encoding='utf-8') as file:
         input_string = file.read()
@@ -118,6 +121,8 @@ def main():
 
     # Calculate source block size
     source_block_size = source_block.nbytes / 1024  # Size in KB
+
+    print(f'Source Block Size: {source_block_size:.2f} KB')
 
     num_iterations = 2 ** math.ceil(math.log2(len(source_block)))
 
@@ -135,11 +140,11 @@ def main():
     with open(encrypted_output_file, 'w', encoding='utf-8') as encrypted_file:
         encrypted_file.write(encrypted_base64)
 
-    # Print the encrypted binary block
-    print(f'Encrypted Binary Block: {encrypted_block}')
-
     if block_number < len(encrypted_block):
         print("Block matched!")
+
+        print(f'Encryption Time: {encryption_time:.4f} seconds')
+        print(f'Number of XOR Operations (Encryption): {encryption_operations}')
 
     start_time = time.time()
     decrypted_blocks, decryption_operations = decrypt(
@@ -149,8 +154,18 @@ def main():
 
     accuracy_percentage = calculate_accuracy(source_block, decrypted_blocks[-1])
 
+    print(f'Accuracy Percentage: {accuracy_percentage:.2f}%')
+
     with open(decrypted_output_file, 'w', encoding='utf-8') as decrypted_file:
         decrypted_file.write(binary_to_string(bytes(decrypted_blocks[-1])))
+
+    print(f'Decryption Time: {decryption_time:.4f} seconds')
+    print(f'Number of XOR Operations (Decryption): {decryption_operations}')
+
+    print()
+
+    print("Final Results")
+    print("------------------------")
 
     print(f'Input File Size: {input_file_size:.2f} KB')
     print(f'Source Block Size: {source_block_size:.2f} KB')
@@ -160,7 +175,7 @@ def main():
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
     print(f'Accuracy Percentage: {accuracy_percentage:.2f}%')
 
-    print("Encryption and decryption completed.")
+    print("Encryption and decryption completed.\n")
 
 
 if __name__ == "__main__":
