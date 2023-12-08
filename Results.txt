@@ -5,10 +5,24 @@ Encrypted Binary Block: [0 1 0 ... 1 1 0]
 Block matched!
 Input File Size: 303.70 KB
 Source Block Size: 2408.55 KB
-Encryption Time: 4.8502 seconds
-Decryption Time: 15.4319 seconds
+Encryption Time: 4.7333 seconds
+Decryption Time: 16.5786 seconds
 Number of XOR Operations (Encryption): 1173983552
 Number of XOR Operations (Decryption): 2525544448
 Accuracy Percentage: 100.00%
-Hamming Distance: 0
+Encryption and decryption completed.
+
+For input4.txt
+
+PS E:\MCA\Project> python rppo5.py
+Enter the block number for encryption: 1500
+Encrypted Binary Block: [0 1 0 ... 0 0 1]
+Block matched!
+Input File Size: 207.40 KB
+Source Block Size: 1639.48 KB
+Encryption Time: 3.1924 seconds
+Decryption Time: 4.5152 seconds
+Number of XOR Operations (Encryption): 799124032
+Number of XOR Operations (Decryption): 1719123968
+Accuracy Percentage: 100.00%
 Encryption and decryption completed.
