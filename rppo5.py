@@ -104,7 +104,7 @@ def binary_to_string(binary_values):
 
 
 def main():
-    input_file = 'input5.txt'  # Change to the actual input file path
+    input_file = 'input4.txt'  # Change to the actual input file path
     encrypted_output_file = 'encrypted.txt'
     decrypted_output_file = 'decrypted.txt'
 
@@ -148,7 +148,6 @@ def main():
     decryption_time = end_time - start_time
 
     accuracy_percentage = calculate_accuracy(source_block, decrypted_blocks[-1])
-    hamming_distance = calculate_hamming_distance(source_block, decrypted_blocks[-1])
 
     with open(decrypted_output_file, 'w', encoding='utf-8') as decrypted_file:
         decrypted_file.write(binary_to_string(bytes(decrypted_blocks[-1])))
@@ -160,7 +159,6 @@ def main():
     print(f'Number of XOR Operations (Encryption): {encryption_operations}')
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
     print(f'Accuracy Percentage: {accuracy_percentage:.2f}%')
-    print(f'Hamming Distance: {hamming_distance}')
 
     print("Encryption and decryption completed.")
 
