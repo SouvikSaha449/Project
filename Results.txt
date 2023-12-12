@@ -24,10 +24,10 @@ Final Results input8.txt
 ------------------------
 Input File Size: 242.78 KB
 Source Block Size: 1919.10 KB
-Encryption Time: 3.9370 seconds
-Decryption Time: 7.2463 seconds
-Number of XOR Operations (Encryption): 935416160
-Number of XOR Operations (Decryption): 2012323840
+Encryption Time: 3.7714 seconds
+Decryption Time: 8.5687 seconds
+Number of XOR Operations (Encryption): 935416160        
+Number of XOR Operations (Decryption): 2012323840       
 Accuracy Percentage: 100.00%
 Encryption and decryption completed.
 
@@ -79,8 +79,8 @@ Final Results input3.txt
 ------------------------
 Input File Size: 91.65 KB
 Source Block Size: 724.34 KB
-Encryption Time: 1.7237 seconds
-Decryption Time: 2.3146 seconds
+Encryption Time: 1.7289 seconds
+Decryption Time: 2.3177 seconds
 Number of XOR Operations (Encryption): 353062528
 Number of XOR Operations (Decryption): 759529472
 Accuracy Percentage: 100.00%
@@ -88,15 +88,14 @@ Encryption and decryption completed.
 
 Final Results input2.txt
 ------------------------
-
 Input File Size: 63.41 KB
 Source Block Size: 501.44 KB
-Encryption Time: 1.1438 seconds
-Decryption Time: 1.6164 seconds
+Encryption Time: 1.1234 seconds
+Decryption Time: 1.6220 seconds
 Number of XOR Operations (Encryption): 244412672
 Number of XOR Operations (Decryption): 525795328
 Accuracy Percentage: 100.00%
-Encryption and decryption completed. 
+Encryption and decryption completed.
 
 Final Results input.txt
 ------------------------
