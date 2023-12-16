@@ -4,9 +4,46 @@ import base64
 import sys
 import os
 import numpy as np
+from docx import Document  # Import the python-docx library
 
 new_depth_limit = 100000
 sys.setrecursionlimit(new_depth_limit)
+
+
+def read_file(file_path):
+    _, file_extension = os.path.splitext(file_path.lower())
+    if file_extension == '.txt':
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    elif file_extension == '.docx':
+        return read_docx_file(file_path)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+
+
+def write_file(file_path, content):
+    _, file_extension = os.path.splitext(file_path.lower())
+    if file_extension == '.txt':
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(content)
+    elif file_extension == '.docx':
+        write_docx_file(file_path, content)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+
+
+def read_docx_file(file_path):
+    doc = Document(file_path)
+    text_content = ""
+    for paragraph in doc.paragraphs:
+        text_content += paragraph.text + "\n"
+    return text_content
+
+
+def write_docx_file(file_path, content):
+    doc = Document()
+    doc.add_paragraph(content)
+    doc.save(file_path)
 
 
 def generate_blocks(source_block, num_iterations, target_block_number, block_size=1024):
@@ -104,25 +141,19 @@ def binary_to_string(binary_values):
 
 
 def main():
-    input_file = 'input.txt'  # Change to the actual input file path
-    encrypted_output_file = 'encrypted.txt'
-    decrypted_output_file = 'decrypted.txt'
-
-    # Calculate input file size
-    input_file_size = os.path.getsize(input_file) / 1024  # Size in KB
-
-    print(f'Input File Size: {input_file_size:.2f} KB')
+    input_file = 'input2.docx'  # Change to the actual input file path
+    encrypted_output_file = 'encrypted.docx'
+    decrypted_output_file = 'decrypted.docx'
     
+    print(f'Input File: {input_file}')
 
-    with open(input_file, 'r', encoding='utf-8') as file:
-        input_string = file.read()
+    # Determine file format based on extension
+    _, input_file_extension = os.path.splitext(input_file.lower())
+    is_docx = input_file_extension == '.docx'
 
-    source_block = np.array(list(string_to_binary(input_string)))
+    input_file_content = read_file(input_file)
 
-    # Calculate source block size
-    source_block_size = source_block.nbytes / 1024  # Size in KB
-
-    print(f'Source Block Size: {source_block_size:.2f} KB')
+    source_block = np.array(list(string_to_binary(input_file_content)))
 
     num_iterations = 2 ** math.ceil(math.log2(len(source_block)))
 
@@ -134,11 +165,9 @@ def main():
     end_time = time.time()
     encryption_time = end_time - start_time
 
-    encrypted_base64 = base64.b64encode(
-        bytes(encrypted_block)).decode('utf-8')
+    encrypted_base64 = base64.b64encode(bytes(encrypted_block)).decode('utf-8')
 
-    with open(encrypted_output_file, 'w', encoding='utf-8') as encrypted_file:
-        encrypted_file.write(encrypted_base64)
+    write_file(encrypted_output_file, encrypted_base64)
 
     if block_number < len(encrypted_block):
         print("Block matched!")
@@ -156,8 +185,8 @@ def main():
 
     print(f'Accuracy Percentage: {accuracy_percentage:.2f}%')
 
-    with open(decrypted_output_file, 'w', encoding='utf-8') as decrypted_file:
-        decrypted_file.write(binary_to_string(bytes(decrypted_blocks[-1])))
+    decrypted_file_content = binary_to_string(bytes(decrypted_blocks[-1]))
+    write_file(decrypted_output_file, decrypted_file_content)
 
     print(f'Decryption Time: {decryption_time:.4f} seconds')
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
@@ -166,9 +195,7 @@ def main():
 
     print("Final Results")
     print("------------------------")
-
-    print(f'Input File Size: {input_file_size:.2f} KB')
-    print(f'Source Block Size: {source_block_size:.2f} KB')
+    print(f'Input File: {input_file}')
     print(f'Encryption Time: {encryption_time:.4f} seconds')
     print(f'Decryption Time: {decryption_time:.4f} seconds')
     print(f'Number of XOR Operations (Encryption): {encryption_operations}')
