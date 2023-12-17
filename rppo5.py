@@ -147,6 +147,11 @@ def main():
     
     print(f'Input File: {input_file}')
 
+    input_file_size = os.path.getsize(input_file)
+    input_file_size_kb = input_file_size/1024
+
+    print(f"The size of the file is {input_file_size_kb:.2f} KB")
+
     # Determine file format based on extension
     _, input_file_extension = os.path.splitext(input_file.lower())
     is_docx = input_file_extension == '.docx'
