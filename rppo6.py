@@ -4,9 +4,46 @@ import base64
 import sys
 import os
 import numpy as np
+from docx import Document  # Import the python-docx library
 
 new_depth_limit = 100000
 sys.setrecursionlimit(new_depth_limit)
+
+
+def read_file(file_path):
+    _, file_extension = os.path.splitext(file_path.lower())
+    if file_extension == '.txt':
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    elif file_extension == '.docx':
+        return read_docx_file(file_path)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+
+
+def write_file(file_path, content):
+    _, file_extension = os.path.splitext(file_path.lower())
+    if file_extension == '.txt':
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(content)
+    elif file_extension == '.docx':
+        write_docx_file(file_path, content)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+
+
+def read_docx_file(file_path):
+    doc = Document(file_path)
+    text_content = ""
+    for paragraph in doc.paragraphs:
+        text_content += paragraph.text + "\n"
+    return text_content
+
+
+def write_docx_file(file_path, content):
+    doc = Document()
+    doc.add_paragraph(content)
+    doc.save(file_path)
 
 
 def generate_blocks(source_block, num_iterations, target_block_number, block_size=1024):
@@ -35,6 +72,29 @@ def generate_blocks(source_block, num_iterations, target_block_number, block_siz
             break
 
     return intermediate_blocks, total_operations
+
+
+def calculate_chi_square(observed_frequencies, expected_frequencies):
+    chi_square_value = np.sum((observed_frequencies - expected_frequencies)**2 / expected_frequencies)
+    return chi_square_value
+
+
+def calculate_expected_frequencies(block):
+    total_bits = len(block)
+    expected_frequency_0 = total_bits / 2  # Assuming equal probability of 0 and 1
+    expected_frequency_1 = total_bits / 2
+    return np.array([expected_frequency_0, expected_frequency_1])
+
+
+def calculate_observed_frequencies(block):
+    return np.array([np.sum(block == 0), np.sum(block == 1)])
+
+
+def calculate_accuracy(original_block, decrypted_block):
+    correct_bits = np.sum(original_block == decrypted_block)
+    total_bits = len(original_block)
+    accuracy_percentage = (correct_bits / total_bits) * 100
+    return accuracy_percentage
 
 
 def encrypt(source_block, block_number, num_iterations):
@@ -92,20 +152,19 @@ def binary_to_string(binary_values):
 
 
 def main():
-    input_file = 'input5.txt'  # Change to the actual input file path
+    input_file = 'input8.txt'  # Change to the actual input file path
     encrypted_output_file = 'encrypted.txt'
     decrypted_output_file = 'decrypted.txt'
 
-    # Calculate input file size
-    input_file_size = os.path.getsize(input_file) / 1024  # Size in KB
+    print(f'Input File: {input_file}')
 
-    with open(input_file, 'r', encoding='utf-8') as file:
-        input_string = file.read()
+    # Determine file format based on extension
+    _, input_file_extension = os.path.splitext(input_file.lower())
+    is_docx = input_file_extension == '.docx'
 
-    source_block = np.array(list(string_to_binary(input_string)))
+    input_file_content = read_file(input_file)
 
-    # Calculate source block size
-    source_block_size = source_block.nbytes / 1024  # Size in KB
+    source_block = np.array(list(string_to_binary(input_file_content)))
 
     num_iterations = 2 ** math.ceil(math.log2(len(source_block)))
 
@@ -117,14 +176,15 @@ def main():
     end_time = time.time()
     encryption_time = end_time - start_time
 
-    encrypted_base64 = base64.b64encode(
-        bytes(encrypted_block)).decode('utf-8')
+    encrypted_base64 = base64.b64encode(bytes(encrypted_block)).decode('utf-8')
 
-    with open(encrypted_output_file, 'w', encoding='utf-8') as encrypted_file:
-        encrypted_file.write(encrypted_base64)
+    write_file(encrypted_output_file, encrypted_base64)
 
-    # Print the encrypted binary block
-    print(f'Encrypted Binary Block: {encrypted_block}')
+    if block_number < len(encrypted_block):
+        print("Block matched!")
+
+        print(f'Encryption Time: {encryption_time:.4f} seconds')
+        print(f'Number of XOR Operations (Encryption): {encryption_operations}')
 
     start_time = time.time()
     decrypted_blocks, decryption_operations = decrypt(
@@ -132,17 +192,51 @@ def main():
     end_time = time.time()
     decryption_time = end_time - start_time
 
-    with open(decrypted_output_file, 'w', encoding='utf-8') as decrypted_file:
-        decrypted_file.write(binary_to_string(bytes(decrypted_blocks[-1])))
+    accuracy_percentage = calculate_accuracy(source_block, decrypted_blocks[-1])
 
-    print(f'Input File Size: {input_file_size:.2f} KB')
-    print(f'Source Block Size: {source_block_size:.2f} KB')
+    print(f'Accuracy Percentage: {accuracy_percentage:.2f}%')
+
+    decrypted_file_content = binary_to_string(bytes(decrypted_blocks[-1]))
+    write_file(decrypted_output_file, decrypted_file_content)
+
+    print(f'Decryption Time: {decryption_time:.4f} seconds')
+    print(f'Number of XOR Operations (Decryption): {decryption_operations}')
+
+    # Calculate Chi-square value for the source block
+    expected_frequencies_source = calculate_expected_frequencies(source_block)
+    observed_frequencies_source = calculate_observed_frequencies(source_block)
+    chi_square_source = calculate_chi_square(observed_frequencies_source, expected_frequencies_source)
+
+    print(f'Chi-square value for the source block: {chi_square_source}')
+
+    # Calculate Chi-square value for the encrypted block
+    expected_frequencies_encrypted = calculate_expected_frequencies(encrypted_block)
+    observed_frequencies_encrypted = calculate_observed_frequencies(encrypted_block)
+    chi_square_encrypted = calculate_chi_square(observed_frequencies_encrypted, expected_frequencies_encrypted)
+
+    print(f'Chi-square value for the encrypted block: {chi_square_encrypted}')
+
+    # Calculate Chi-square value for the decrypted block
+    expected_frequencies_decrypted = calculate_expected_frequencies(decrypted_blocks[-1])
+    observed_frequencies_decrypted = calculate_observed_frequencies(decrypted_blocks[-1])
+    chi_square_decrypted = calculate_chi_square(observed_frequencies_decrypted, expected_frequencies_decrypted)
+
+    print(f'Chi-square value for the decrypted block: {chi_square_decrypted}')
+
+    print()
+    print("Final Results")
+    print("------------------------")
+    print(f'Input File: {input_file}')
     print(f'Encryption Time: {encryption_time:.4f} seconds')
     print(f'Decryption Time: {decryption_time:.4f} seconds')
     print(f'Number of XOR Operations (Encryption): {encryption_operations}')
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
+    print(f'Accuracy Percentage: {accuracy_percentage:.2f}%')
+    print(f'Chi-square value for the source block: {chi_square_source}')
+    print(f'Chi-square value for the encrypted block: {chi_square_encrypted}')
+    print(f'Chi-square value for the decrypted block: {chi_square_decrypted}')
 
-    print("Encryption and decryption completed.")
+    print("Encryption, decryption, and Chi-square calculations completed.\n")
 
 
 if __name__ == "__main__":
