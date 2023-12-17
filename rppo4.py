@@ -1,107 +1,268 @@
+import math
 import time
 import base64
+import sys
+import os
 import numpy as np
+from docx import Document  # Import the python-docx library
+from scipy.stats import chisquare
 
-def generate_blocks(source_block, num_iterations, target_block_number):
+
+new_depth_limit = 100000
+sys.setrecursionlimit(new_depth_limit)
+
+
+def read_file(file_path):
+    _, file_extension = os.path.splitext(file_path.lower())
+    if file_extension == '.txt':
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    elif file_extension == '.docx':
+        return read_docx_file(file_path)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+
+
+def write_file(file_path, content):
+    _, file_extension = os.path.splitext(file_path.lower())
+    if file_extension == '.txt':
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(content)
+    elif file_extension == '.docx':
+        write_docx_file(file_path, content)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+
+
+def read_docx_file(file_path):
+    doc = Document(file_path)
+    text_content = ""
+    for paragraph in doc.paragraphs:
+        text_content += paragraph.text + "\n"
+    return text_content
+
+
+def write_docx_file(file_path, content):
+    doc = Document()
+    doc.add_paragraph(content)
+    doc.save(file_path)
+
+
+def generate_blocks(source_block, num_iterations, target_block_number, block_size=1024):
     intermediate_blocks = [source_block]
-    intermediate_blocks_len = 1
+    intermediate_blocks_len = len(intermediate_blocks)
 
-    for _ in range(num_iterations):
-        xor_result = np.bitwise_xor.reduce(intermediate_blocks[-1], axis=0)
-        block = np.bitwise_xor(intermediate_blocks[-1], xor_result)
+    def generate_block_recursive(block, remaining_iterations, operation_count=0):
+        nonlocal intermediate_blocks, intermediate_blocks_len
+
+        if remaining_iterations == 0 or intermediate_blocks_len > target_block_number:
+            return operation_count
+
+        xor_result = np.bitwise_xor.reduce(block, axis=0)
+        block = np.bitwise_xor(block, xor_result)
+        operation_count += len(block)
+
         intermediate_blocks.append(block)
         intermediate_blocks_len += 1
+        return generate_block_recursive(block, remaining_iterations - 1, operation_count)
 
+    chunk_size = min(block_size, num_iterations)
+    for i in range(0, num_iterations, chunk_size):
+        total_operations = generate_block_recursive(
+            intermediate_blocks[-1], chunk_size)
         if intermediate_blocks_len > target_block_number:
             break
 
-    total_operations = num_iterations * np.int64(len(source_block))
     return intermediate_blocks, total_operations
 
+
+def calculate_chi_square_and_df(observed_frequencies, expected_frequencies):
+    if observed_frequencies.ndim == 1:
+        # If observed_frequencies is 1D, reshape it to a 2D array with a single row
+        observed_frequencies = observed_frequencies.reshape(1, -1)
+
+    if expected_frequencies.ndim == 1:
+        # If expected_frequencies is 1D, reshape it to a 2D array with a single row
+        expected_frequencies = expected_frequencies.reshape(1, -1)
+
+    # Ensure the dimensions of observed and expected frequencies are compatible
+    if observed_frequencies.shape != expected_frequencies.shape:
+        raise ValueError("Mismatched dimensions between observed and expected frequencies.")
+
+    chi_square_value, p_value = chisquare(observed_frequencies, f_exp=expected_frequencies, axis=None)
+    df = np.prod(observed_frequencies.shape) - 1  # Degrees of freedom calculation
+    return chi_square_value, df
+
+
+
+def calculate_expected_frequencies(block):
+    total_bits = len(block)
+    expected_frequency_0 = total_bits / 2  # Assuming equal probability of 0 and 1
+    expected_frequency_1 = total_bits / 2
+    return np.array([expected_frequency_0, expected_frequency_1])
+
+def calculate_observed_frequencies(block):
+    unique, counts = np.unique(block, return_counts=True)
+    observed_frequencies = np.zeros(2)
+    for value, count in zip(unique, counts):
+        observed_frequencies[value] = count
+    return observed_frequencies
+
+
+
+def calculate_accuracy(original_block, decrypted_block):
+    correct_bits = np.sum(original_block == decrypted_block)
+    total_bits = len(original_block)
+    accuracy_percentage = (correct_bits / total_bits) * 100
+    return accuracy_percentage
+
+
 def encrypt(source_block, block_number, num_iterations):
-    intermediate_blocks, total_operations = generate_blocks(source_block, num_iterations, block_number)
+    intermediate_blocks, total_operations = generate_blocks(
+        source_block, num_iterations, block_number)
     if block_number < len(intermediate_blocks):
         return intermediate_blocks[block_number], total_operations
     else:
-        return [], np.int64(0)
+        return [], 0
 
-def decrypt(final_block, block_number, num_iterations):
+
+def decrypt(final_block, block_number, num_iterations, block_size=1024):
+    if block_number >= num_iterations:
+        print("Decryption failed. Block number out of range.")
+        return [], 0
+
     decrypted_blocks = [final_block]
+    intermediate_blocks_len = len(decrypted_blocks)
 
-    for _ in range(num_iterations - block_number):
-        xor_result = np.bitwise_xor.reduce(decrypted_blocks[-1], axis=0)
-        block = np.bitwise_xor(decrypted_blocks[-1], xor_result)
+    def generate_block_recursive(block, remaining_iterations, operation_count=0):
+        nonlocal decrypted_blocks, intermediate_blocks_len
+
+        if remaining_iterations == 0:
+            return operation_count
+
+        xor_result = np.bitwise_xor.reduce(block, axis=0)
+        block = np.bitwise_xor(block, xor_result)
+        operation_count += len(block)
+
         decrypted_blocks.append(block)
+        intermediate_blocks_len += 1
+        return generate_block_recursive(block, remaining_iterations - 1, operation_count)
 
-    total_operations = np.int64(num_iterations - block_number) * np.int64(len(final_block))
+    chunk_size = min(block_size, num_iterations - block_number)
+    for i in range(0, num_iterations - block_number, chunk_size):
+        total_operations = generate_block_recursive(
+            decrypted_blocks[-1], chunk_size)
+        if intermediate_blocks_len > block_number:
+            break
+
     return decrypted_blocks, total_operations
 
+
 def string_to_binary(string):
-    return np.array([int(bit) for byte in string.encode('utf-8') for bit in f"{byte:08b}"])
+    return np.array([int(bit) for byte in string.encode('utf-8') for bit in f"{byte:08b}"], dtype=np.uint8)
+
 
 def binary_to_string(binary_values):
     if len(binary_values) % 8 != 0:
         raise ValueError("Binary values length must be a multiple of 8 for proper decoding.")
 
-    bytes_data = bytes(int(''.join(map(str, binary_values[i:i+8])), 2) for i in range(0, len(binary_values), 8))
+    bytes_data = bytes(
+        int(''.join(map(str, binary_values[i:i + 8])), 2) for i in range(0, len(binary_values), 8))
     return bytes_data.decode('utf-8', errors='ignore')
 
 def main():
-    input_file = 'input5.txt'  # Change to the actual input file path
-    encrypted_output_file = 'encrypted.txt'  # Change to the desired encrypted output file path
-    decrypted_output_file = 'decrypted.txt'  # Change to the desired decrypted output file path
+    input_file = 'input6.txt'  # Change to the actual input file path
+    encrypted_output_file = 'encrypted.txt'
+    decrypted_output_file = 'decrypted.txt'
 
-    # Read the input from a file
-    with open(input_file, 'r', encoding='utf-8') as file:
-        input_string = file.read()
+    print(f'Input File: {input_file}')
 
-    # Convert the input string to the source block
-    source_block = string_to_binary(input_string)
+    # Determine file format based on extension
+    _, input_file_extension = os.path.splitext(input_file.lower())
+    is_docx = input_file_extension == '.docx'
 
-    size = len(source_block)  # Size of the source block in bits
-    num_iterations = 2 ** np.ceil(np.log2(size)).astype(int)
+    input_file_content = read_file(input_file)
 
-    # Prompt for the block number
+    source_block = np.array(list(string_to_binary(input_file_content)))
+
+    num_iterations = 2 ** math.ceil(math.log2(len(source_block)))
+
     block_number = int(input("Enter the block number for encryption: "))
 
-    # Encryption
     start_time = time.time()
-    encrypted_block, encryption_operations = encrypt(source_block, block_number, num_iterations)
+    encrypted_block, encryption_operations = encrypt(
+        source_block, block_number, num_iterations)
     end_time = time.time()
     encryption_time = end_time - start_time
 
-    # Encode the encrypted data as base64
     encrypted_base64 = base64.b64encode(bytes(encrypted_block)).decode('utf-8')
 
-    # Write the encrypted base64 string to the encrypted output file
-    with open(encrypted_output_file, 'w', encoding='utf-8') as encrypted_file:
-        encrypted_file.write(encrypted_base64)
+    write_file(encrypted_output_file, encrypted_base64)
 
-    # Decryption
+    if block_number < len(encrypted_block):
+        print("Block matched!")
+
+        print(f'Encryption Time: {encryption_time:.4f} seconds')
+        print(f'Number of XOR Operations (Encryption): {encryption_operations}')
+
     start_time = time.time()
-    decrypted_blocks, decryption_operations = decrypt(encrypted_block, block_number, num_iterations)
+    decrypted_blocks, decryption_operations = decrypt(
+        encrypted_block, block_number, num_iterations)
     end_time = time.time()
     decryption_time = end_time - start_time
 
-    # Convert the decrypted binary data to a string
-    decrypted_string = binary_to_string(bytes(decrypted_blocks[-1]))
+    accuracy_percentage = calculate_accuracy(source_block, decrypted_blocks[-1])
 
-    # Write the decrypted string to the decrypted output file
-    with open(decrypted_output_file, 'w', encoding='utf-8') as decrypted_file:
-        decrypted_file.write(decrypted_string)
+    print(f'Accuracy Percentage: {accuracy_percentage:.2f}%')
 
-    # Print additional information
-    total_blocks_generated = len(encrypted_block)
-    print(f'Size of Source Block: {size} bits')
-    print(f'Total Blocks Generated: {total_blocks_generated}')
-    print(f'Encryption Time: {encryption_time:.4f} seconds')
+    decrypted_file_content = binary_to_string(bytes(decrypted_blocks[-1]))
+    write_file(decrypted_output_file, decrypted_file_content)
+
     print(f'Decryption Time: {decryption_time:.4f} seconds')
-
-    print(f'Number of XOR Operations (Encryption): {encryption_operations}')
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
 
-    print("Encryption and decryption completed.")
+    # Calculate Chi-square value and Degrees of Freedom for the source block
+    expected_frequencies_source = calculate_expected_frequencies(source_block)
+    observed_frequencies_source = calculate_observed_frequencies(source_block)
+    chi_square_source, df_source = calculate_chi_square_and_df(observed_frequencies_source, expected_frequencies_source)
+
+    print(f'Chi-square value for the source block: {chi_square_source}')
+    print(f'Degrees of Freedom for the source block: {df_source}')
+
+    # Calculate Chi-square value and Degrees of Freedom for the encrypted block
+    expected_frequencies_encrypted = calculate_expected_frequencies(encrypted_block)
+    observed_frequencies_encrypted = calculate_observed_frequencies(encrypted_block)
+    chi_square_encrypted, df_encrypted = calculate_chi_square_and_df(observed_frequencies_encrypted, expected_frequencies_encrypted)
+
+    print(f'Chi-square value for the encrypted block: {chi_square_encrypted}')
+    print(f'Degrees of Freedom for the encrypted block: {df_encrypted}')
+
+    # Calculate Chi-square value and Degrees of Freedom for the decrypted block
+    expected_frequencies_decrypted = calculate_expected_frequencies(decrypted_blocks[-1])
+    observed_frequencies_decrypted = calculate_observed_frequencies(decrypted_blocks[-1])
+    chi_square_decrypted, df_decrypted = calculate_chi_square_and_df(observed_frequencies_decrypted, expected_frequencies_decrypted)
+
+    print(f'Chi-square value for the decrypted block: {chi_square_decrypted}')
+    print(f'Degrees of Freedom for the decrypted block: {df_decrypted}')
+
+    print()
+    print("Final Results")
+    print("------------------------")
+    print(f'Input File: {input_file}')
+    print(f'Encryption Time: {encryption_time:.4f} seconds')
+    print(f'Decryption Time: {decryption_time:.4f} seconds')
+    print(f'Number of XOR Operations (Encryption): {encryption_operations}')
+    print(f'Number of XOR Operations (Decryption): {decryption_operations}')
+    print(f'Accuracy Percentage: {accuracy_percentage:.2f}%')
+    print(f'Chi-square value for the source block: {chi_square_source}')
+    print(f'Degrees of Freedom for the source block: {df_source}')
+    print(f'Chi-square value for the encrypted block: {chi_square_encrypted}')
+    print(f'Degrees of Freedom for the encrypted block: {df_encrypted}')
+    print(f'Chi-square value for the decrypted block: {chi_square_decrypted}')
+    print(f'Degrees of Freedom for the decrypted block: {df_decrypted}')
+
+    print("Encryption, decryption, and Chi-square calculations completed.\n")
+
 
 if __name__ == "__main__":
     main()
-
