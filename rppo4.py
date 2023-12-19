@@ -7,46 +7,24 @@ import numpy as np
 from docx import Document  # Import the python-docx library
 from scipy.stats import chisquare
 
-
 new_depth_limit = 100000
 sys.setrecursionlimit(new_depth_limit)
 
-
 def read_file(file_path):
     _, file_extension = os.path.splitext(file_path.lower())
-    if file_extension == '.txt':
+    if file_extension in ['.cpp', '.sys']:
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
-    elif file_extension == '.docx':
-        return read_docx_file(file_path)
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
-
 
 def write_file(file_path, content):
     _, file_extension = os.path.splitext(file_path.lower())
-    if file_extension == '.txt':
+    if file_extension in ['.cpp', '.sys']:
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(content)
-    elif file_extension == '.docx':
-        write_docx_file(file_path, content)
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
-
-
-def read_docx_file(file_path):
-    doc = Document(file_path)
-    text_content = ""
-    for paragraph in doc.paragraphs:
-        text_content += paragraph.text + "\n"
-    return text_content
-
-
-def write_docx_file(file_path, content):
-    doc = Document()
-    doc.add_paragraph(content)
-    doc.save(file_path)
-
 
 def generate_blocks(source_block, num_iterations, target_block_number, block_size=1024):
     intermediate_blocks = [source_block]
@@ -75,29 +53,23 @@ def generate_blocks(source_block, num_iterations, target_block_number, block_siz
 
     return intermediate_blocks, total_operations
 
-
 def calculate_chi_square_and_df(observed_frequencies, expected_frequencies):
     if observed_frequencies.ndim == 1:
-        # If observed_frequencies is 1D, reshape it to a 2D array with a single row
         observed_frequencies = observed_frequencies.reshape(1, -1)
 
     if expected_frequencies.ndim == 1:
-        # If expected_frequencies is 1D, reshape it to a 2D array with a single row
         expected_frequencies = expected_frequencies.reshape(1, -1)
 
-    # Ensure the dimensions of observed and expected frequencies are compatible
     if observed_frequencies.shape != expected_frequencies.shape:
         raise ValueError("Mismatched dimensions between observed and expected frequencies.")
 
     chi_square_value, p_value = chisquare(observed_frequencies, f_exp=expected_frequencies, axis=None)
-    df = np.prod(observed_frequencies.shape) - 1  # Degrees of freedom calculation
+    df = np.prod(observed_frequencies.shape) - 1
     return chi_square_value, df
-
-
 
 def calculate_expected_frequencies(block):
     total_bits = len(block)
-    expected_frequency_0 = total_bits / 2  # Assuming equal probability of 0 and 1
+    expected_frequency_0 = total_bits / 2
     expected_frequency_1 = total_bits / 2
     return np.array([expected_frequency_0, expected_frequency_1])
 
@@ -108,14 +80,11 @@ def calculate_observed_frequencies(block):
         observed_frequencies[value] = count
     return observed_frequencies
 
-
-
 def calculate_accuracy(original_block, decrypted_block):
     correct_bits = np.sum(original_block == decrypted_block)
     total_bits = len(original_block)
     accuracy_percentage = (correct_bits / total_bits) * 100
     return accuracy_percentage
-
 
 def encrypt(source_block, block_number, num_iterations):
     intermediate_blocks, total_operations = generate_blocks(
@@ -124,7 +93,6 @@ def encrypt(source_block, block_number, num_iterations):
         return intermediate_blocks[block_number], total_operations
     else:
         return [], 0
-
 
 def decrypt(final_block, block_number, num_iterations, block_size=1024):
     if block_number >= num_iterations:
@@ -157,10 +125,8 @@ def decrypt(final_block, block_number, num_iterations, block_size=1024):
 
     return decrypted_blocks, total_operations
 
-
 def string_to_binary(string):
     return np.array([int(bit) for byte in string.encode('utf-8') for bit in f"{byte:08b}"], dtype=np.uint8)
-
 
 def binary_to_string(binary_values):
     if len(binary_values) % 8 != 0:
@@ -171,15 +137,18 @@ def binary_to_string(binary_values):
     return bytes_data.decode('utf-8', errors='ignore')
 
 def main():
-    input_file = 'input6.txt'  # Change to the actual input file path
-    encrypted_output_file = 'encrypted.txt'
-    decrypted_output_file = 'decrypted.txt'
+    input_file = 'generated_file.cpp'  # Change to the actual input file path
+    encrypted_output_file = 'encrypted.cpp'
+    decrypted_output_file = 'decrypted.cpp'
 
     print(f'Input File: {input_file}')
 
-    # Determine file format based on extension
     _, input_file_extension = os.path.splitext(input_file.lower())
     is_docx = input_file_extension == '.docx'
+
+    # Print the size of the input file
+    input_file_size = os.path.getsize(input_file)
+    print(f'Input File Size: {input_file_size} bytes')
 
     input_file_content = read_file(input_file)
 
@@ -221,7 +190,6 @@ def main():
     print(f'Decryption Time: {decryption_time:.4f} seconds')
     print(f'Number of XOR Operations (Decryption): {decryption_operations}')
 
-    # Calculate Chi-square value and Degrees of Freedom for the source block
     expected_frequencies_source = calculate_expected_frequencies(source_block)
     observed_frequencies_source = calculate_observed_frequencies(source_block)
     chi_square_source, df_source = calculate_chi_square_and_df(observed_frequencies_source, expected_frequencies_source)
@@ -229,7 +197,6 @@ def main():
     print(f'Chi-square value for the source block: {chi_square_source}')
     print(f'Degrees of Freedom for the source block: {df_source}')
 
-    # Calculate Chi-square value and Degrees of Freedom for the encrypted block
     expected_frequencies_encrypted = calculate_expected_frequencies(encrypted_block)
     observed_frequencies_encrypted = calculate_observed_frequencies(encrypted_block)
     chi_square_encrypted, df_encrypted = calculate_chi_square_and_df(observed_frequencies_encrypted, expected_frequencies_encrypted)
@@ -237,7 +204,6 @@ def main():
     print(f'Chi-square value for the encrypted block: {chi_square_encrypted}')
     print(f'Degrees of Freedom for the encrypted block: {df_encrypted}')
 
-    # Calculate Chi-square value and Degrees of Freedom for the decrypted block
     expected_frequencies_decrypted = calculate_expected_frequencies(decrypted_blocks[-1])
     observed_frequencies_decrypted = calculate_observed_frequencies(decrypted_blocks[-1])
     chi_square_decrypted, df_decrypted = calculate_chi_square_and_df(observed_frequencies_decrypted, expected_frequencies_decrypted)
@@ -249,6 +215,7 @@ def main():
     print("Final Results")
     print("------------------------")
     print(f'Input File: {input_file}')
+    print(f'Input File Size: {input_file_size} bytes')
     print(f'Encryption Time: {encryption_time:.4f} seconds')
     print(f'Decryption Time: {decryption_time:.4f} seconds')
     print(f'Number of XOR Operations (Encryption): {encryption_operations}')
@@ -262,7 +229,6 @@ def main():
     print(f'Degrees of Freedom for the decrypted block: {df_decrypted}')
 
     print("Encryption, decryption, and Chi-square calculations completed.\n")
-
 
 if __name__ == "__main__":
     main()
