@@ -10,7 +10,8 @@ sys.setrecursionlimit(new_depth_limit)
 
 def read_file(file_path):
     _, file_extension = os.path.splitext(file_path.lower())
-    if file_extension in ['.cpp', '.sys', '.exe', '.dll']:
+    supported_extensions = ['.cpp', '.sys', '.exe', '.dll', '.com']
+    if file_extension in supported_extensions:
         with open(file_path, 'rb') as file:
             return file.read()
     else:
@@ -18,7 +19,8 @@ def read_file(file_path):
 
 def write_file(file_path, content):
     _, file_extension = os.path.splitext(file_path.lower())
-    if file_extension in ['.cpp', '.sys', '.exe', '.dll']:
+    supported_extensions = ['.cpp', '.sys', '.exe', '.dll', '.com']
+    if file_extension in supported_extensions:
         with open(file_path, 'wb') as file:
             file.write(content)
     else:
@@ -108,7 +110,7 @@ def binary_to_string(binary_values):
     return bytes_data.decode('utf-8', errors='ignore')
 
 def main():
-    input_file = 'YourDLL.dll'  # Change to the actual input file path
+    input_file = 'YourDll.dll'  # Change to the actual input file path
     encrypted_output_file = 'encrypted.dll'
     decrypted_output_file = 'decrypted.dll'
 
