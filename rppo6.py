@@ -4,7 +4,7 @@ import base64
 import sys
 import os
 import numpy as np
-from functools import lru_cache
+from scipy.stats import chi2_contingency
 
 new_depth_limit = 100000
 sys.setrecursionlimit(new_depth_limit)
@@ -37,16 +37,13 @@ def generate_blocks(source_block, num_iterations, target_block_number, block_siz
         if remaining_iterations == 0 or intermediate_blocks_len > target_block_number:
             return operation_count
 
-        new_block = np.zeros_like(block)
-        xor_result = 0
+        xor_result = np.bitwise_xor.reduce(block, axis=0)
+        block = np.bitwise_xor(block, xor_result)
+        operation_count += len(block)
 
-        for j in range(len(block)):
-            xor_result ^= block[j]
-            new_block[j] = xor_result
-
-        intermediate_blocks.append(new_block)
+        intermediate_blocks.append(block)
         intermediate_blocks_len += 1
-        return generate_block_recursive(new_block, remaining_iterations - 1, operation_count + len(new_block))
+        return generate_block_recursive(block, remaining_iterations - 1, operation_count)
 
     chunk_size = min(block_size, num_iterations)
     for i in range(0, num_iterations, chunk_size):
@@ -70,45 +67,59 @@ def encrypt(source_block, block_number, num_iterations, block_size=1024):
         return intermediate_blocks[block_number], total_operations
     else:
         return [], 0
-    
-def detect_changes(source_block, encrypted_block):
-    source_binary = ''.join(map(str, source_block))
-    encrypted_binary = ''.join(map(str, encrypted_block))
-
-    changes = []
-    for i, (src_bit, enc_bit) in enumerate(zip(source_binary, encrypted_binary)):
-        if src_bit != enc_bit:
-            changes.append(i)
-
-    return changes
 
 def decrypt(final_block, block_number, num_iterations, block_size=1024):
     if block_number >= num_iterations:
         print("Decryption failed. Block number out of range.")
-        return None, 0
+        return [], 0
 
-    decrypted_block = final_block.copy()
+    decrypted_blocks = [final_block]
+    intermediate_blocks_len = len(decrypted_blocks)
 
     def generate_block_recursive(block, remaining_iterations, operation_count=0):
-        nonlocal decrypted_block
+        nonlocal decrypted_blocks, intermediate_blocks_len
 
         if remaining_iterations == 0:
             return operation_count
 
-        new_block = np.zeros_like(block)
-        xor_result = 0
+        xor_result = np.bitwise_xor.reduce(block, axis=0)
+        block = np.bitwise_xor(block, xor_result)
+        operation_count += len(block)
 
-        for j in reversed(range(len(block))):
-            new_block[j] = xor_result
-            xor_result ^= block[j]
-
-        decrypted_block = np.bitwise_xor(decrypted_block, new_block)  # XOR with the new_block
-        return generate_block_recursive(new_block, remaining_iterations - 1, operation_count + len(new_block))
+        decrypted_blocks.append(block)
+        intermediate_blocks_len += 1
+        return generate_block_recursive(block, remaining_iterations - 1, operation_count)
 
     chunk_size = min(block_size, num_iterations - block_number)
-    total_operations = generate_block_recursive(final_block, chunk_size)
+    for i in range(0, num_iterations - block_number, chunk_size):
+        total_operations = generate_block_recursive(
+            decrypted_blocks[-1], chunk_size)
+        if intermediate_blocks_len > block_number:
+            break
 
-    return decrypted_block, total_operations
+    return decrypted_blocks, total_operations
+
+from scipy.stats import chi2_contingency
+
+def chi_square_test(source_block, encrypted_block):
+    source_counts = [np.count_nonzero(source_block == 0), np.count_nonzero(source_block == 1)]
+    encrypted_counts = [np.count_nonzero(encrypted_block == 0), np.count_nonzero(encrypted_block == 1)]
+
+    # Add a small constant to each count to avoid zero counts
+    epsilon = 1e-10
+    source_counts = np.array(source_counts) + epsilon
+    encrypted_counts = np.array(encrypted_counts) + epsilon
+
+    contingency_table = np.array([source_counts, encrypted_counts])
+
+    # Get the degree of freedom
+    degrees_of_freedom = (contingency_table.shape[0] - 1) * (contingency_table.shape[1] - 1)
+
+    # Perform the Chi-square test
+    chi2, p, _, _ = chi2_contingency(contingency_table)
+
+    return chi2, p, degrees_of_freedom
+
 
 def string_to_binary(string):
     return np.array([int(bit) for byte in string.encode('utf-8') for bit in f"{byte:08b}"], dtype=np.uint8)
@@ -122,9 +133,9 @@ def binary_to_string(binary_values):
     return bytes_data.decode('utf-8', errors='ignore')
 
 def main():
-    input_file = 'YourDll.dll'  # Change to the actual input file path
-    encrypted_output_file = 'encrypted.dll'
-    decrypted_output_file = 'decrypted.dll'
+    input_file = 'output.com'  # Change to the actual input file path
+    encrypted_output_file = 'encrypted.com'
+    decrypted_output_file = 'decrypted.com'
 
     print(f'Input File: {input_file}')
 
@@ -144,14 +155,15 @@ def main():
     block_number = int(input("Enter the block number for encryption: "))
 
     start_time = time.time()
-    encrypted_block, encryption_operations = encrypt(source_block, block_number, num_iterations)
+    encrypted_block, encryption_operations = encrypt(
+        source_block, block_number, num_iterations)
     end_time = time.time()
     encryption_time = end_time - start_time
 
     # Calculate the size of the encrypted block in bits
     encrypted_block_size_bits = len(encrypted_block) * 8
 
-    encrypted_base64 = base64.b64encode(np.array(list(encrypted_block)).tobytes()).decode('utf-8')
+    encrypted_base64 = base64.b64encode(encrypted_block.tobytes()).decode('utf-8')
 
     write_file(encrypted_output_file, base64.b64decode(encrypted_base64))
 
@@ -159,23 +171,30 @@ def main():
         print("Block matched!")
 
         print(f'Encryption Time: {encryption_time:.4f} seconds')
-        changes = detect_changes(source_block, encrypted_block)
-        print(f'Changes in Position: {changes}')
         print(f'Number of XOR Operations (Encryption): {encryption_operations}')
-        print(f'Size of Encrypted Block: {encrypted_block_size_bits} bits')  # Add this line
+        print(f'Size of Encrypted Block: {encrypted_block_size_bits} bits')
+        chi2, p_value, degrees_of_freedom = chi_square_test(source_block, encrypted_block)
+
+        print(f'Chi-square value: {chi2:.4f}')
+        print(f'P-value: {p_value:.4f}')
+        print(f'Degrees of Freedom: {degrees_of_freedom}')
 
     start_time = time.time()
-    decrypted_blocks, decryption_operations = decrypt(encrypted_block, block_number, num_iterations)
+    decrypted_blocks, decryption_operations = decrypt(
+        encrypted_block, block_number, num_iterations)
     end_time = time.time()
     decryption_time = end_time - start_time
 
-    accuracy_percentage = calculate_accuracy(source_block, decrypted_blocks[0])  # Use the source_block for accuracy calculation
+    accuracy_percentage = calculate_accuracy(source_block, decrypted_blocks[-1])
 
     print(f'Accuracy Percentage: {accuracy_percentage:.2f}%')
 
-    decrypted_file_content = decrypted_blocks.tobytes()
+    decrypted_file_content = decrypted_blocks[-1].tobytes()
     write_file(decrypted_output_file, decrypted_file_content)
+
     print(f'Decryption Time: {decryption_time:.4f} seconds')
+    print(f'Number of XOR Operations (Decryption): {decryption_operations}')
+
     print()
     print("Final Results")
     print("------------------------")
@@ -183,7 +202,12 @@ def main():
     print(f'Input File Size: {input_file_size} bytes')
     print(f'Encryption Time: {encryption_time:.4f} seconds')
     print(f'Decryption Time: {decryption_time:.4f} seconds')
+    print(f'Number of XOR Operations (Encryption): {encryption_operations}')
+    print(f'Number of XOR Operations (Decryption): {decryption_operations}')
     print(f'Accuracy Percentage: {accuracy_percentage:.2f}%')
+    print(f'Chi-square value: {chi2:.4f}')
+    print(f'P-value: {p_value:.4f}')
+    print(f'Degrees of Freedom: {degrees_of_freedom}')
     print("Encryption and decryption completed.\n")
 
 if __name__ == "__main__":
