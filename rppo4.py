@@ -1,139 +1,162 @@
-import math
+#fully working code
+
 import sys
 import time
-import numpy as np
-
 
 # Set a new recursion depth limit
 new_depth_limit = 100000  # Adjust to your desired limit
 sys.setrecursionlimit(new_depth_limit)
 
-class MemoizationDict:
-    def __init__(self):
-        self.memo_dict = {}
-
-    def memoize(self, key, value):
-        self.memo_dict[key] = value
-
-    def get_memoized(self, key):
-        return self.memo_dict.get(key, None)
-
-def generate_block_recursive(block, remaining_iterations, memo_dict, intermediate_blocks):
-    if remaining_iterations == 0:
-        return
-    memo_key = tuple(block)
-    if (memo_result := memo_dict.get_memoized(memo_key)) is not None:
-        new_block = memo_result
-    else:
-        new_block = np.bitwise_xor.accumulate(block)
-        memo_dict.memoize(memo_key, new_block)
-
-    intermediate_blocks.append(new_block)
-    generate_block_recursive(new_block, remaining_iterations - 1, memo_dict, intermediate_blocks)
 
 def generate_blocks(source_block, num_iterations):
-    intermediate_blocks = [source_block.copy()]
-    memo_dict = MemoizationDict()
-    generate_block_recursive(source_block, num_iterations, memo_dict, intermediate_blocks)
+    intermediate_blocks = []
+    intermediate_blocks.append(source_block.copy())
+
+    def generate_block_recursive(block, remaining_iterations):
+        if remaining_iterations == 0:
+            return
+        new_block = block.copy()
+        for j in range(len(block)):
+            xor_result = 0
+            for k in range(j + 1):
+                xor_result ^= block[k]
+            new_block[j] = xor_result
+        intermediate_blocks.append(new_block)
+        generate_block_recursive(new_block, remaining_iterations - 1)
+
+    generate_block_recursive(source_block, num_iterations)
+
     return intermediate_blocks
 
 def pad_source_block(source_block, num_iterations):
     size = len(source_block)
     padded_size = num_iterations
     if size < padded_size:
-        padded_block = np.concatenate((np.zeros(padded_size - size, dtype=int), source_block))
+        # Calculate the number of bits to pad
+        num_bits_to_pad = padded_size - size
+        # Pad the source block at the beginning with bits 0
+        padded_block = [0] * num_bits_to_pad + source_block
     else:
         padded_block = source_block.copy()
-    return padded_block, padded_size
+    return padded_block, padded_size  # Return the padded block and its size
 
-def encrypt(padded_source_block, block_index, num_iterations, encrypted_ascii_var):
+def encrypt(padded_source_block, encryption_number, num_iterations):
     intermediate_blocks = generate_blocks(padded_source_block, num_iterations)
-    encrypted_block = intermediate_blocks[block_index]
-    encrypted_ascii_var += binary_to_string(encrypted_block)
-    return encrypted_block, padded_source_block, encrypted_ascii_var
+    return intermediate_blocks[encryption_number]
 
-def decrypt(final_block, block_index, num_iterations, decrypted_ascii_var):
-    if block_index >= len(final_block):
-        return [], decrypted_ascii_var
+
+def decrypt(final_block, encryption_number, num_iterations):
+    if encryption_number >= len(final_block):
+        return [], 0
 
     decrypted_blocks = []
 
     def generate_block_recursive(block, remaining_iterations):
         if remaining_iterations == 0:
             return
-        new_block = np.bitwise_xor.accumulate(block)
+        new_block = block.copy()
+        for j in range(len(block)):
+            xor_result = 0
+            for k in range(j + 1):
+                xor_result ^= block[k]
+            new_block[j] = xor_result
         decrypted_blocks.append(new_block)
         generate_block_recursive(new_block, remaining_iterations - 1)
 
-    generate_block_recursive(final_block, num_iterations - block_index)
-    decrypted_ascii_var += binary_to_string(decrypted_blocks[-1])
-    return decrypted_blocks, decrypted_ascii_var
+    generate_block_recursive(final_block, num_iterations - encryption_number)
+    return decrypted_blocks
+
 
 def string_to_binary(string):
-    return np.array([int(bit) for char in string for bit in format(ord(char), '08b')], dtype=int)
+    binary_values = []
+    for char in string:
+        ascii_value = ord(char)
+        binary_value = format(ascii_value, '08b')  # Convert ASCII to 8-bit binary
+        binary_values.extend([int(bit) for bit in binary_value])
+    return binary_values
+
 
 def binary_to_string(binary_values):
     binary_string = ''.join(map(str, binary_values))
     chars = [binary_string[i:i + 8] for i in range(0, len(binary_string), 8)]
     return ''.join([chr(int(char, 2)) for char in chars])
 
+
 def read_file_content(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         content = file.read()
     return content
 
+
 def main():
-    input_file_path = 'Txt Files/input12.txt'
+    input_file_path = 'input.txt'  # Change to the actual input file path
     source_string = read_file_content(input_file_path)
 
-    source_block = string_to_binary(source_string)
-    size = len(source_block)
+    source_blocks = [string_to_binary(source_string[i:i + 2]) for i in range(0, len(source_string), 2)]
+    max_sub_source_block_size = max(source_blocks, key=len)
+    print(f'maximum block number of encryption: {len(max_sub_source_block_size)}\n')
+    
+    encryption_number = int(input("Enter the block number of encryption: "))
 
-    num_iterations = 2 ** math.ceil(math.log2(size))
+    encrypted_strings = []
+    decrypted_strings = []
+    total_encryption_time = 0
+    total_decryption_time = 0
 
-    block_size = 8
-    num_blocks = math.ceil(size / block_size)
+    if(encryption_number >= len(max_sub_source_block_size)):
+        print("Encryption not possible")
+    else:
+        for block_number, source_block in enumerate(source_blocks):
+            num_iterations = len(max_sub_source_block_size)
 
-    print(f'Source String: {source_string}')
+            padded_source_block, _ = pad_source_block(source_block, num_iterations)
 
-    encrypted_ascii_var = ""
-    decrypted_ascii_var = ""
+            intermediate_blocks = generate_blocks(padded_source_block, num_iterations)
 
-    stop_number = int(input("Enter the stop number for encryption: "))
+            print(f'Block {block_number + 1}:')
+            print(f'Source String: {binary_to_string(padded_source_block)}')
+            print(f'Source Block (Binary): {source_block}\n')
 
-    for block_index in range(num_blocks):
-        print(f'\nEnter the block number for encryption: {block_index + 1}')
-        
-        start_index = block_index * block_size
-        end_index = (block_index + 1) * block_size
-        current_block = source_block[start_index:end_index]
+            start_time = time.time()
+            for i, block in enumerate(intermediate_blocks[1:], start=1):
+                print(f'Encrypted Block {i}: {block}\n')
 
-        print(f'Size of Padded Source Block: {num_iterations}')
-        print(f'Source Block (Binary): {current_block}\n')
+            encrypted_block = encrypt(padded_source_block, encryption_number, num_iterations)
+            encrypted_string = binary_to_string(encrypted_block)
 
-        padded_source_block, _ = pad_source_block(current_block, num_iterations)
+            encrypted_strings.append(encrypted_string)
+            end_time = time.time()
+            total_encryption_time = end_time - start_time
 
-        intermediate_blocks = generate_blocks(padded_source_block, num_iterations)
 
-        for i, block in enumerate(intermediate_blocks[1:stop_number], start=1):
-            print(f'Encrypted Block {i}: {block}\n')
+            print(f'Encrypted Block (Binary): {encrypted_block}\n')
+            print(f'Encrypted String: {encrypted_string}\n')
 
-        encrypted_block, _, encrypted_ascii_var = encrypt(padded_source_block, stop_number, num_iterations, encrypted_ascii_var)
-        encrypted_string = binary_to_string(encrypted_block)
+            start_time = time.time()
+            decrypted_blocks = decrypt(encrypted_block, encryption_number, num_iterations)
 
-        print(f'Encrypted Block (Binary): {encrypted_block}\n')
-        print(f'Encrypted String: {encrypted_string}\n')
+            for i, block in enumerate(decrypted_blocks):
+                print(f'Decrypted Block {i + 2}: {block}\n')
 
-        decrypted_blocks, decrypted_ascii_var = decrypt(encrypted_block, stop_number, num_iterations, decrypted_ascii_var)
+            decrypted_string = binary_to_string(decrypted_blocks[-1])
+            decrypted_strings.append(decrypted_string)
+            end_time = time.time()
+            total_decryption_time = end_time - start_time
 
-        for i, block in enumerate(decrypted_blocks):
-            print(f'Decrypted Block {i + stop_number + 1}: {block}\n')
 
-        decrypted_string = binary_to_string(decrypted_blocks[-1])
-        print(f'Decrypted String: {decrypted_string}\n')
+            print(f'Decrypted String: {decrypted_string}\n')
 
-    print(f'Encrypted ASCII Version: {encrypted_ascii_var}\n')
-    print(f'Decrypted ASCII Version: {decrypted_ascii_var}\n')
+        print("Final Encrypted String:")
+        final_encrypted_string = ''.join(encrypted_strings)
+        print(final_encrypted_string)
 
-if __name__ == "__main__":
+        print("\nFinal Decrypted String:")
+        final_decrypted_string = ''.join(decrypted_strings)
+        print(final_decrypted_string)
+
+        print("\nTotal Encryption Time:", total_encryption_time, "seconds")
+        print("Total Decryption Time:", total_decryption_time, "seconds")
+
+
+if _name_ == "_main_":
     main()
