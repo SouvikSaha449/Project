@@ -1,19 +1,19 @@
-#fully working code
-
+import os
 import sys
 import time
+import os
 
 # Set a new recursion depth limit
 new_depth_limit = 100000  # Adjust to your desired limit
 sys.setrecursionlimit(new_depth_limit)
 
 
-def generate_blocks(source_block, num_iterations):
+def generate_blocks(source_block, num_iterations, encryption_number):
     intermediate_blocks = []
     intermediate_blocks.append(source_block.copy())
 
     def generate_block_recursive(block, remaining_iterations):
-        if remaining_iterations == 0:
+        if remaining_iterations == 0 or len(intermediate_blocks) > encryption_number:
             return
         new_block = block.copy()
         for j in range(len(block)):
@@ -28,6 +28,7 @@ def generate_blocks(source_block, num_iterations):
 
     return intermediate_blocks
 
+
 def pad_source_block(source_block, num_iterations):
     size = len(source_block)
     padded_size = num_iterations
@@ -40,9 +41,10 @@ def pad_source_block(source_block, num_iterations):
         padded_block = source_block.copy()
     return padded_block, padded_size  # Return the padded block and its size
 
+
 def encrypt(padded_source_block, encryption_number, num_iterations):
-    intermediate_blocks = generate_blocks(padded_source_block, num_iterations)
-    return intermediate_blocks[encryption_number]
+    intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
+    return intermediate_blocks[min(encryption_number, len(intermediate_blocks) - 1)]
 
 
 def decrypt(final_block, encryption_number, num_iterations):
@@ -87,15 +89,35 @@ def read_file_content(file_path):
         content = file.read()
     return content
 
+def read_file(file_path):
+    _, file_extension = os.path.splitext(file_path.lower())
+    supported_extensions = ['.cpp', '.sys', '.exe', '.dll', '.com', '.txt']
+    if file_extension in supported_extensions:
+        with open(file_path, 'rb') as file:
+            return file.read()
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+
+def write_file(file_path, content):
+    _, file_extension = os.path.splitext(file_path.lower())
+    supported_extensions = ['.cpp', '.sys', '.exe', '.dll', '.com', '.txt']
+    if file_extension in supported_extensions:
+        with open(file_path, 'wb') as file:
+            file.write(content)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+
 
 def main():
-    input_file_path = 'input.txt'  # Change to the actual input file path
+    input_file_path = 'Txt Files/input6.txt'  # Change to the actual input file path
+    input_file_size = os.path.getsize(input_file_path)
+    print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
 
     source_blocks = [string_to_binary(source_string[i:i + 2]) for i in range(0, len(source_string), 2)]
     max_sub_source_block_size = max(source_blocks, key=len)
     print(f'maximum block number of encryption: {len(max_sub_source_block_size)}\n')
-    
+
     encryption_number = int(input("Enter the block number of encryption: "))
 
     encrypted_strings = []
@@ -103,7 +125,7 @@ def main():
     total_encryption_time = 0
     total_decryption_time = 0
 
-    if(encryption_number >= len(max_sub_source_block_size)):
+    if encryption_number >= len(max_sub_source_block_size):
         print("Encryption not possible")
     else:
         for block_number, source_block in enumerate(source_blocks):
@@ -111,48 +133,51 @@ def main():
 
             padded_source_block, _ = pad_source_block(source_block, num_iterations)
 
-            intermediate_blocks = generate_blocks(padded_source_block, num_iterations)
+            intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
 
-            print(f'Block {block_number + 1}:')
+            """print(f'Block {block_number + 1}:')
             print(f'Source String: {binary_to_string(padded_source_block)}')
-            print(f'Source Block (Binary): {source_block}\n')
+            print(f'Source Block (Binary): {source_block}\n')"""
 
-            start_time = time.time()
-            for i, block in enumerate(intermediate_blocks[1:], start=1):
-                print(f'Encrypted Block {i}: {block}\n')
+            # Encryption Time Calculation
+            start_time_encryption = time.time()
+            """for i, block in enumerate(intermediate_blocks[1:], start=1):
+                print(f'Encrypted Block {i}: {block}\n')"""
 
             encrypted_block = encrypt(padded_source_block, encryption_number, num_iterations)
             encrypted_string = binary_to_string(encrypted_block)
 
             encrypted_strings.append(encrypted_string)
-            end_time = time.time()
-            total_encryption_time = end_time - start_time
+            end_time_encryption = time.time()
+            total_encryption_time += (end_time_encryption - start_time_encryption)
 
+            """print(f'Encrypted Block (Binary): {encrypted_block}\n')
+            print(f'Encrypted String: {encrypted_string}\n')"""
 
-            print(f'Encrypted Block (Binary): {encrypted_block}\n')
-            print(f'Encrypted String: {encrypted_string}\n')
-
-            start_time = time.time()
+            # Decryption Time Calculation
+            start_time_decryption = time.time()
             decrypted_blocks = decrypt(encrypted_block, encryption_number, num_iterations)
 
-            for i, block in enumerate(decrypted_blocks):
-                print(f'Decrypted Block {i + 2}: {block}\n')
+            """for i, block in enumerate(decrypted_blocks):
+                decrypt_itr_number = i + encryption_number + 1
+                print(f'Decrypted Block {decrypt_itr_number}: {block}\n')"""
 
             decrypted_string = binary_to_string(decrypted_blocks[-1])
             decrypted_strings.append(decrypted_string)
-            end_time = time.time()
-            total_decryption_time = end_time - start_time
+            end_time_decryption = time.time()
+            total_decryption_time += (end_time_decryption - start_time_decryption)
 
+            """print(f'Decrypted String: {decrypted_string}\n')"""
 
-            print(f'Decrypted String: {decrypted_string}\n')
-
-        print("Final Encrypted String:")
+        """print("Final Encrypted String:")"""
         final_encrypted_string = ''.join(encrypted_strings)
-        print(final_encrypted_string)
+        encrypted_content = final_encrypted_string.encode('utf-8')  # Replace encrypted_ascii_var with your encrypted content
+        write_file('encrypted.txt', encrypted_content)
 
-        print("\nFinal Decrypted String:")
+        """print("\nFinal Decrypted String:")"""
         final_decrypted_string = ''.join(decrypted_strings)
-        print(final_decrypted_string)
+        decrypted_content = final_decrypted_string.encode('utf-8')  # Replace decrypted_ascii_var with your decrypted content
+        write_file('decrypted.txt', decrypted_content)
 
         print("\nTotal Encryption Time:", total_encryption_time, "seconds")
         print("Total Decryption Time:", total_decryption_time, "seconds")
