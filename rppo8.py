@@ -1,18 +1,21 @@
 import os
 import sys
 import time
-import os
 
 # Set a new recursion depth limit
 new_depth_limit = 100000  # Adjust to your desired limit
 sys.setrecursionlimit(new_depth_limit)
+encryption_xor_count = 0
+decryption_xor_count = 0
 
 
 def generate_blocks(source_block, num_iterations, encryption_number):
+    global encryption_xor_count
     intermediate_blocks = []
     intermediate_blocks.append(source_block.copy())
 
     def generate_block_recursive(block, remaining_iterations):
+        global encryption_xor_count
         if remaining_iterations == 0 or len(intermediate_blocks) > encryption_number:
             return
         new_block = block.copy()
@@ -20,6 +23,7 @@ def generate_blocks(source_block, num_iterations, encryption_number):
             xor_result = 0
             for k in range(j + 1):
                 xor_result ^= block[k]
+                encryption_xor_count += 1  # Count XOR operation
             new_block[j] = xor_result
         intermediate_blocks.append(new_block)
         generate_block_recursive(new_block, remaining_iterations - 1)
@@ -27,6 +31,7 @@ def generate_blocks(source_block, num_iterations, encryption_number):
     generate_block_recursive(source_block, num_iterations)
 
     return intermediate_blocks
+
 
 
 def pad_source_block(source_block, num_iterations):
@@ -48,12 +53,14 @@ def encrypt(padded_source_block, encryption_number, num_iterations):
 
 
 def decrypt(final_block, encryption_number, num_iterations):
+    global decryption_xor_count
     if encryption_number >= len(final_block):
         return [], 0
 
     decrypted_blocks = []
 
     def generate_block_recursive(block, remaining_iterations):
+        global decryption_xor_count
         if remaining_iterations == 0:
             return
         new_block = block.copy()
@@ -61,6 +68,7 @@ def decrypt(final_block, encryption_number, num_iterations):
             xor_result = 0
             for k in range(j + 1):
                 xor_result ^= block[k]
+                decryption_xor_count += 1  # Count XOR operation
             new_block[j] = xor_result
         decrypted_blocks.append(new_block)
         generate_block_recursive(new_block, remaining_iterations - 1)
@@ -109,7 +117,7 @@ def write_file(file_path, content):
 
 
 def main():
-    input_file_path = 'Txt Files/input6.txt'  # Change to the actual input file path
+    input_file_path = 'Txt Files/input8.txt'  # Change to the actual input file path
     input_file_size = os.path.getsize(input_file_path)
     print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
@@ -181,6 +189,8 @@ def main():
 
         print("\nTotal Encryption Time:", total_encryption_time, "seconds")
         print("Total Decryption Time:", total_decryption_time, "seconds")
+        print("Total XOR operations during encryption:", encryption_xor_count)
+        print("Total XOR operations during decryption:", decryption_xor_count)
 
 
 if __name__ == "__main__":
