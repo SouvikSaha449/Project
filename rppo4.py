@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-import os
 
 # Set a new recursion depth limit
 new_depth_limit = 100000  # Adjust to your desired limit
@@ -109,7 +108,7 @@ def write_file(file_path, content):
 
 
 def main():
-    input_file_path = 'Txt Files/input6.txt'  # Change to the actual input file path
+    input_file_path = 'Txt Files/input8.txt'  # Change to the actual input file path
     input_file_size = os.path.getsize(input_file_path)
     print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
