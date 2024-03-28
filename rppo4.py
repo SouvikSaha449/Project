@@ -1,13 +1,15 @@
 import os
 import sys
 import time
+from docx import Document
+
 
 # Set a new recursion depth limit
 new_depth_limit = 100000  # Adjust to your desired limit
 sys.setrecursionlimit(new_depth_limit)
 encryption_xor_count = 0
 decryption_xor_count = 0
-
+accuracy = 0
 
 def generate_blocks(source_block, num_iterations, encryption_number):
     global encryption_xor_count
@@ -31,8 +33,6 @@ def generate_blocks(source_block, num_iterations, encryption_number):
     generate_block_recursive(source_block, num_iterations)
 
     return intermediate_blocks
-
-
 
 def pad_source_block(source_block, num_iterations):
     size = len(source_block)
@@ -93,36 +93,73 @@ def binary_to_string(binary_values):
 
 
 def read_file_content(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        content = file.read()
-    return content
-
-def read_file(file_path):
-    _, file_extension = os.path.splitext(file_path.lower())
-    supported_extensions = ['.cpp', '.sys', '.exe', '.dll', '.com', '.txt']
-    if file_extension in supported_extensions:
-        with open(file_path, 'rb') as file:
-            return file.read()
+    valid_extensions = {'.sys', '.exe', '.cpp', '.com', '.docx','.txt'}
+    file_extension = os.path.splitext(file_path)[1]
+    if file_extension.lower() in valid_extensions:
+        encodings = ['utf-8', 'latin-1']  # Add more encodings if needed
+        for encoding in encodings:
+            try:
+                with open(file_path, 'r', encoding=encoding) as file:
+                    content = file.read()
+                return content
+            except UnicodeDecodeError:
+                pass
+        print("Failed to read the file. Unable to decode using any supported encoding.")
+        return None
     else:
-        raise ValueError(f"Unsupported file format: {file_extension}")
+        print("Unsupported file type. Only .sys, .exe, .cpp, .com, and .docx files are supported.")
+        return None
 
 def write_file(file_path, content):
     _, file_extension = os.path.splitext(file_path.lower())
-    supported_extensions = ['.cpp', '.sys', '.exe', '.dll', '.com', '.txt']
+    supported_extensions = ['.cpp', '.sys', '.exe', '.com', '.txt', '.docx']
     if file_extension in supported_extensions:
-        with open(file_path, 'wb') as file:
-            file.write(content)
+        if file_extension == '.docx':
+            # For .docx, use python-docx to write the content
+            document = Document()
+            document.add_paragraph(content.decode('utf-8'))
+            document.save(file_path)
+        elif file_extension == '.txt':
+            # For .txt files, writing content in text mode
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.write(content.decode('utf-8'))
+        else:
+            # For other supported extensions, writing content in binary mode
+            with open(file_path, 'wb') as file:
+                file.write(content)
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
+    
+def calculate_accuracy(list1, list2):
+    if len(list1) != len(list2):
+        return "Lists are not the same size"
+    
+    num_elements = len(list1)
+    num_same = sum(1 for i in range(num_elements) if list1[i] == list2[i])
+    accuracy = (num_same / num_elements) * 100
+    return accuracy
+
+def average_accuracy(source_blocks, decrypted_block_lists):
+    total_accuracy = 0
+    num_sublists = len(source_blocks)
+    
+    for sub_list in source_blocks:
+        accuracy = calculate_accuracy(sub_list, decrypted_block_lists[source_blocks.index(sub_list)])
+        total_accuracy += accuracy
+    
+    if num_sublists == 0:
+        return 0  # to avoid division by zero error
+    
+    return total_accuracy / num_sublists
 
 
 def main():
-    input_file_path = 'Txt Files/input8.txt'  # Change to the actual input file path
+    input_file_path = 'Txt Files/input.txt'  # Change to the actual input file path
     input_file_size = os.path.getsize(input_file_path)
     print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
 
-    source_blocks = [string_to_binary(source_string[i:i + 2]) for i in range(0, len(source_string), 2)]
+    source_blocks = [string_to_binary(source_string[i:i + 1]) for i in range(0, len(source_string), 1)]
     max_sub_source_block_size = max(source_blocks, key=len)
     print(f'maximum block number of encryption: {len(max_sub_source_block_size)}\n')
 
@@ -130,6 +167,7 @@ def main():
 
     encrypted_strings = []
     decrypted_strings = []
+    decrypted_block_lists = []
     total_encryption_time = 0
     total_decryption_time = 0
 
@@ -171,12 +209,14 @@ def main():
                 print(f'Decrypted Block {decrypt_itr_number}: {block}\n')"""
 
             decrypted_string = binary_to_string(decrypted_blocks[-1])
+            decrypted_block_lists.append(decrypted_blocks[-1])
             decrypted_strings.append(decrypted_string)
             end_time_decryption = time.time()
             total_decryption_time += (end_time_decryption - start_time_decryption)
 
             """print(f'Decrypted String: {decrypted_string}\n')"""
 
+        
         """print("Final Encrypted String:")"""
         final_encrypted_string = ''.join(encrypted_strings)
         encrypted_content = final_encrypted_string.encode('utf-8')  # Replace encrypted_ascii_var with your encrypted content
@@ -189,6 +229,8 @@ def main():
 
         print("\nTotal Encryption Time:", total_encryption_time, "seconds")
         print("Total Decryption Time:", total_decryption_time, "seconds")
+        avg_accuracy = average_accuracy(source_blocks, decrypted_block_lists)
+        print("Average accuracy:", avg_accuracy)
         print("Total XOR operations during encryption:", encryption_xor_count)
         print("Total XOR operations during decryption:", decryption_xor_count)
 
