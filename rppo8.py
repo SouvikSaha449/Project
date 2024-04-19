@@ -2,7 +2,7 @@ import os
 import sys
 import time
 from docx import Document
-
+from collections import Counter
 
 # Set a new recursion depth limit
 new_depth_limit = 100000  # Adjust to your desired limit
@@ -10,6 +10,7 @@ sys.setrecursionlimit(new_depth_limit)
 encryption_xor_count = 0
 decryption_xor_count = 0
 accuracy = 0
+
 
 def generate_blocks(source_block, num_iterations, encryption_number):
     global encryption_xor_count
@@ -152,14 +153,44 @@ def average_accuracy(source_blocks, decrypted_block_lists):
     
     return total_accuracy / num_sublists
 
+def count_characters(source_string):
+    character_count = Counter(source_string)
+    return character_count
+
+
+def tabulate_character_counts(character_count_source, character_count_encrypted):
+    total_source_count = 0
+    total_encrypted_count = 0
+    total_total_count = 0
+    all_chars = set(character_count_source.keys()) | set(character_count_encrypted.keys())
+    total_unique_chars = len(all_chars)
+    print("Character\tSource\t\tEncrypted\tTotal")
+    print("-------------------------------------------")
+    for char in sorted(all_chars):
+        count_source = character_count_source.get(char, 0)
+        total_source_count +=  count_source
+        count_encrypted = character_count_encrypted.get(char, 0)
+        total_encrypted_count += count_encrypted
+        add = count_source + count_encrypted
+        total_total_count += add
+        if char.isprintable():
+            print(f"{char}\t\t{count_source}\t\t{count_encrypted}\t\t{add}")
+        else:
+            print(f"U+{ord(char):04X}\t\t{count_source}\t\t{count_encrypted}\t\t{add}")
+    
+    print("\nTotal unique characters:", total_unique_chars)
+    print("\nTotal Source Count:", total_source_count)
+    print("\nTotal Encrypted Count:", total_encrypted_count)
+    print("\nTotal Total Count:", total_total_count)
+
 
 def main():
-    input_file_path = 'Txt Files/input.txt'  # Change to the actual input file path
+    input_file_path = 'TXT Files/input15.txt'  # Change to the actual input file path
     input_file_size = os.path.getsize(input_file_path)
     print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
 
-    source_blocks = [string_to_binary(source_string[i:i + 1]) for i in range(0, len(source_string), 1)]
+    source_blocks = [string_to_binary(source_string[i:i + 2]) for i in range(0, len(source_string), 2)]
     max_sub_source_block_size = max(source_blocks, key=len)
     print(f'maximum block number of encryption: {len(max_sub_source_block_size)}\n')
 
@@ -181,6 +212,7 @@ def main():
 
             intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
 
+            
             """print(f'Block {block_number + 1}:')
             print(f'Source String: {binary_to_string(padded_source_block)}')
             print(f'Source Block (Binary): {source_block}\n')"""
@@ -227,13 +259,26 @@ def main():
         decrypted_content = final_decrypted_string.encode('utf-8')  # Replace decrypted_ascii_var with your decrypted content
         write_file('decrypted.txt', decrypted_content)
 
+        # Count characters in the source string
+        if source_string:
+            character_count_source = count_characters(source_string)
+            
+            # Count characters in the encrypted string
+            encrypted_string = ''.join(encrypted_strings)
+            character_count_encrypted = count_characters(encrypted_string)
+
+            # Tabulate character counts
+            print("\nCharacter Counts:")
+            tabulate_character_counts(character_count_source, character_count_encrypted)
+        else:
+            print("No content to analyze.")
+
         print("\nTotal Encryption Time:", total_encryption_time, "seconds")
         print("Total Decryption Time:", total_decryption_time, "seconds")
         avg_accuracy = average_accuracy(source_blocks, decrypted_block_lists)
         print("Average accuracy:", avg_accuracy)
         print("Total XOR operations during encryption:", encryption_xor_count)
         print("Total XOR operations during decryption:", decryption_xor_count)
-
 
 if __name__ == "__main__":
     main()
