@@ -1,18 +1,24 @@
 import os
 import sys
 import time
+from collections import Counter
 
 
 # Set a new recursion depth limit
 new_depth_limit = 100000  # Adjust to your desired limit
 sys.setrecursionlimit(new_depth_limit)
+encryption_xor_count = 0
+decryption_xor_count = 0
+accuracy = 0
 
 
 def generate_blocks(source_block, num_iterations, encryption_number):
+    global encryption_xor_count
     intermediate_blocks = []
     intermediate_blocks.append(source_block.copy())
 
     def generate_block_recursive(block, remaining_iterations):
+        global encryption_xor_count
         if remaining_iterations == 0 or len(intermediate_blocks) > encryption_number:
             return
         new_block = block.copy()
@@ -20,6 +26,7 @@ def generate_blocks(source_block, num_iterations, encryption_number):
             xor_result = 0
             for k in range(j + 1):
                 xor_result ^= block[k]
+                encryption_xor_count += 1  # Count XOR operation
             new_block[j] = xor_result
         intermediate_blocks.append(new_block)
         generate_block_recursive(new_block, remaining_iterations - 1)
@@ -27,7 +34,6 @@ def generate_blocks(source_block, num_iterations, encryption_number):
     generate_block_recursive(source_block, num_iterations)
 
     return intermediate_blocks
-
 
 def pad_source_block(source_block, num_iterations):
     size = len(source_block)
@@ -46,14 +52,15 @@ def encrypt(padded_source_block, encryption_number, num_iterations):
     intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
     return intermediate_blocks[min(encryption_number, len(intermediate_blocks) - 1)]
 
-
 def decrypt(final_block, encryption_number, num_iterations):
+    global decryption_xor_count
     if encryption_number >= len(final_block):
         return [], 0
 
     decrypted_blocks = []
 
     def generate_block_recursive(block, remaining_iterations):
+        global decryption_xor_count
         if remaining_iterations == 0:
             return
         new_block = block.copy()
@@ -61,6 +68,7 @@ def decrypt(final_block, encryption_number, num_iterations):
             xor_result = 0
             for k in range(j + 1):
                 xor_result ^= block[k]
+                decryption_xor_count += 1  # Count XOR operation
             new_block[j] = xor_result
         decrypted_blocks.append(new_block)
         generate_block_recursive(new_block, remaining_iterations - 1)
@@ -69,21 +77,9 @@ def decrypt(final_block, encryption_number, num_iterations):
     return decrypted_blocks
 
 
-def split_into_blocks(source_string, block_size):
-    # Split the source string into blocks of fixed size
-    blocks = [source_string[i:i + block_size] for i in range(0, len(source_string), block_size)]
-    # If the last block is less than the block size, pad it with zeros
-    if len(blocks[-1]) < block_size:
-        blocks[-1] += '0' * (block_size - len(blocks[-1]))
-    elif len(blocks[-1]) > block_size:
-        blocks[-1] = blocks[-1][:block_size]  # Trim the last block if it's longer than the block size
-    return blocks
-
-
 def string_to_binary(string):
     binary_values = []
     for char in string:
-        # Convert each character to its ASCII value and then to 8-bit binary representation
         ascii_value = ord(char)
         binary_value = format(ascii_value, '08b')  # Convert ASCII to 8-bit binary
         binary_values.extend([int(bit) for bit in binary_value])
@@ -97,25 +93,35 @@ def binary_to_string(binary_values):
 
 
 def read_file_content(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        content = file.read()
-    return content
-
-def read_file(file_path):
-    _, file_extension = os.path.splitext(file_path.lower())
-    supported_extensions = ['.cpp', '.sys', '.exe', '.dll', '.com', '.txt','.pdf']
-    if file_extension in supported_extensions:
-        with open(file_path, 'rb') as file:
-            return file.read()
+    valid_extensions = {'.sys', '.exe', '.cpp', '.com', '.dll','.txt'}
+    file_extension = os.path.splitext(file_path)[1]
+    if file_extension.lower() in valid_extensions:
+        encodings = ['utf-8', 'latin-1']  # Add more encodings if needed
+        for encoding in encodings:
+            try:
+                with open(file_path, 'r', encoding=encoding) as file:
+                    content = file.read()
+                return content
+            except UnicodeDecodeError:
+                pass
+        print("Failed to read the file. Unable to decode using any supported encoding.")
+        return None
     else:
-        raise ValueError(f"Unsupported file format: {file_extension}")
+        print("Unsupported file type. Only .sys, .exe, .cpp, .com, and .docx files are supported.")
+        return None
 
 def write_file(file_path, content):
     _, file_extension = os.path.splitext(file_path.lower())
-    supported_extensions = ['.cpp', '.sys', '.exe', '.dll', '.com', '.txt','.pdf']
+    supported_extensions = ['.cpp', '.sys', '.exe', '.com', '.txt', '.dll']
     if file_extension in supported_extensions:
-        with open(file_path, 'wb') as file:
-            file.write(content)
+        if file_extension == '.txt':
+            # For .txt files, writing content in text mode
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.write(content.decode('utf-8'))
+        else:
+            # For other supported extensions, writing content in binary mode
+            with open(file_path, 'wb') as file:
+                file.write(content)
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
     
@@ -128,27 +134,83 @@ def calculate_accuracy(list1, list2):
     accuracy = (num_same / num_elements) * 100
     return accuracy
 
-def main():
+def average_accuracy(source_blocks, decrypted_block_lists):
+    total_accuracy = 0
+    num_sublists = len(source_blocks)
     
-    input_file_path = 'Txt Files/input.txt'  # Change to the actual input file path
+    for sub_list in source_blocks:
+        accuracy = calculate_accuracy(sub_list, decrypted_block_lists[source_blocks.index(sub_list)])
+        total_accuracy += accuracy
+    
+    if num_sublists == 0:
+        return 0  # to avoid division by zero error
+    
+    return total_accuracy / num_sublists
+
+
+def count_characters(source_string):
+    character_count = Counter(source_string)
+    return character_count
+
+
+def tabulate_character_counts(character_count_source, character_count_encrypted):
+    total_source_count = 0
+    total_encrypted_count = 0
+    total_total_count = 0
+    chi_period = 0
+    all_chars = set(character_count_source.keys()) | set(character_count_encrypted.keys())
+    total_unique_chars = len(all_chars)
+    print("Character\tSource\t\tEncrypted\tTotal")
+    print("-------------------------------------------")
+    for char in sorted(all_chars):
+            count_source = character_count_source.get(char, 0)
+            total_source_count += count_source
+            count_encrypted = character_count_encrypted.get(char, 0)
+            total_encrypted_count += count_encrypted
+            add = count_source + count_encrypted
+            total_total_count += add
+            if char.isprintable():
+                print(f"{char}\t\t{count_source}\t\t{count_encrypted}\t\t{add}")
+            else:
+                print(f"U+{ord(char):04X}\t\t{count_source}\t\t{count_encrypted}\t\t{add}")
+
+    for char in sorted(all_chars):
+        count_source = character_count_source.get(char, 0)
+        count_encrypted = character_count_encrypted.get(char, 0)
+        add = count_source + count_encrypted 
+        club_total_s_total_e = (total_source_count + total_encrypted_count) / 2
+        chi_period += chi_period_calculate(count_source, count_encrypted, add, club_total_s_total_e, total_total_count)
+
+    degree_of_freedom = (total_unique_chars-1) * 1
+    
+    print("\nTotal unique characters:", total_unique_chars)
+    print("\nTotal Source Count:", total_source_count)
+    print("\nTotal Encrypted Count:", total_encrypted_count)
+    print("\nTotal Total Count: ", total_total_count)
+    print("\nChi Square Value: ",chi_period)
+    print("\nDegree of Freedom: ",degree_of_freedom)
+
+def chi_period_calculate(count_source, count_encrypted, add, club_total_s_total_e, total_total_count):
+        top = (count_source ** 2) + (count_encrypted ** 2)
+        bottom = (club_total_s_total_e * add) / total_total_count
+        chi_period = top / bottom
+        return chi_period
+
+def main():
+    input_file_path = 'CPP Files/input5.cpp'  # Change to the actual input file path
     input_file_size = os.path.getsize(input_file_path)
     print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
-    
 
-    source_blocks = [string_to_binary(source_string[i:i + 2]) for i in range(0, len(source_string), 2)]
-    # print(source_blocks)
-    # print([len(block) for block in source_blocks])
+    source_blocks = [string_to_binary(source_string[i:i + 8]) for i in range(0, len(source_string), 8)]
     max_sub_source_block_size = max(source_blocks, key=len)
-    # if len(source_blocks) > 16:
-    #      sum+=1
-    # print(f"{sum} blocks are over 16bits")
     print(f'maximum block number of encryption: {len(max_sub_source_block_size)}\n')
 
     encryption_number = int(input("Enter the block number of encryption: "))
 
     encrypted_strings = []
     decrypted_strings = []
+    decrypted_block_lists = []
     total_encryption_time = 0
     total_decryption_time = 0
 
@@ -162,13 +224,7 @@ def main():
 
             intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
 
-            # Check if the length of the block exceeds 16 bits and print it if it does
             
-            # if len(padded_source_block) > 16:
-            #     sum+=1
-            # print(f"{sum} blocks are over 16bits")
-
-
             """print(f'Block {block_number + 1}:')
             print(f'Source String: {binary_to_string(padded_source_block)}')
             print(f'Source Block (Binary): {source_block}\n')"""
@@ -179,7 +235,6 @@ def main():
                 print(f'Encrypted Block {i}: {block}\n')"""
 
             encrypted_block = encrypt(padded_source_block, encryption_number, num_iterations)
-
             encrypted_string = binary_to_string(encrypted_block)
 
             encrypted_strings.append(encrypted_string)
@@ -193,34 +248,50 @@ def main():
             start_time_decryption = time.time()
             decrypted_blocks = decrypt(encrypted_block, encryption_number, num_iterations)
 
-            # for i, block in enumerate(decrypted_blocks):
-            #     decrypt_itr_number = i + encryption_number + 1
-            #     print(f'Decrypted Block {decrypt_itr_number}: {block}\n')
-            # print(decrypted_blocks)
+            """for i, block in enumerate(decrypted_blocks):
+                decrypt_itr_number = i + encryption_number + 1
+                print(f'Decrypted Block {decrypt_itr_number}: {block}\n')"""
+
             decrypted_string = binary_to_string(decrypted_blocks[-1])
+            decrypted_block_lists.append(decrypted_blocks[-1])
             decrypted_strings.append(decrypted_string)
             end_time_decryption = time.time()
             total_decryption_time += (end_time_decryption - start_time_decryption)
 
-            # Accuracy Calculation
-            # accuracy = calculate_accuracy(padded_source_block, decrypted_blocks)
-            # print(accuracy)
-
-
             """print(f'Decrypted String: {decrypted_string}\n')"""
 
+        
         """print("Final Encrypted String:")"""
         final_encrypted_string = ''.join(encrypted_strings)
         encrypted_content = final_encrypted_string.encode('utf-8')  # Replace encrypted_ascii_var with your encrypted content
-        write_file('encrypted.txt', encrypted_content)
+        write_file('encrypted.cpp', encrypted_content)
 
         """print("\nFinal Decrypted String:")"""
         final_decrypted_string = ''.join(decrypted_strings)
         decrypted_content = final_decrypted_string.encode('utf-8')  # Replace decrypted_ascii_var with your decrypted content
-        write_file('decrypted.txt', decrypted_content)
+        write_file('decrypted.cpp', decrypted_content)
 
+        # Count characters in the source string
+        if source_string:
+            character_count_source = count_characters(source_string)
+            
+            # Count characters in the encrypted string
+            encrypted_string = ''.join(encrypted_strings)
+            character_count_encrypted = count_characters(encrypted_string)
+
+            # Tabulate character counts
+            print("\nCharacter Counts:")
+            tabulate_character_counts(character_count_source, character_count_encrypted)
+        else:
+            print("No content to analyze.")
+
+        print(f'Input File Size: {input_file_size} bytes')
         print("\nTotal Encryption Time:", total_encryption_time, "seconds")
         print("Total Decryption Time:", total_decryption_time, "seconds")
-        
+        avg_accuracy = average_accuracy(source_blocks, decrypted_block_lists)
+        print("Average accuracy:", avg_accuracy)
+        print("Total XOR operations during encryption:", encryption_xor_count)
+        print("Total XOR operations during decryption:", decryption_xor_count)
+
 if __name__ == "__main__":
     main()
