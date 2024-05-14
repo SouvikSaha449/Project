@@ -1,8 +1,8 @@
 import os
 import sys
 import time
-from docx import Document
 from collections import Counter
+
 
 # Set a new recursion depth limit
 new_depth_limit = 100000  # Adjust to your desired limit
@@ -52,7 +52,6 @@ def encrypt(padded_source_block, encryption_number, num_iterations):
     intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
     return intermediate_blocks[min(encryption_number, len(intermediate_blocks) - 1)]
 
-
 def decrypt(final_block, encryption_number, num_iterations):
     global decryption_xor_count
     if encryption_number >= len(final_block):
@@ -94,7 +93,7 @@ def binary_to_string(binary_values):
 
 
 def read_file_content(file_path):
-    valid_extensions = {'.sys', '.exe', '.cpp', '.com', '.docx','.txt'}
+    valid_extensions = {'.sys', '.exe', '.cpp', '.com', '.dll','.txt'}
     file_extension = os.path.splitext(file_path)[1]
     if file_extension.lower() in valid_extensions:
         encodings = ['utf-8', 'latin-1']  # Add more encodings if needed
@@ -113,14 +112,9 @@ def read_file_content(file_path):
 
 def write_file(file_path, content):
     _, file_extension = os.path.splitext(file_path.lower())
-    supported_extensions = ['.cpp', '.sys', '.exe', '.com', '.txt', '.docx']
+    supported_extensions = ['.cpp', '.sys', '.exe', '.com', '.txt', '.dll']
     if file_extension in supported_extensions:
-        if file_extension == '.docx':
-            # For .docx, use python-docx to write the content
-            document = Document()
-            document.add_paragraph(content.decode('utf-8'))
-            document.save(file_path)
-        elif file_extension == '.txt':
+        if file_extension == '.txt':
             # For .txt files, writing content in text mode
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.write(content.decode('utf-8'))
@@ -153,6 +147,7 @@ def average_accuracy(source_blocks, decrypted_block_lists):
     
     return total_accuracy / num_sublists
 
+
 def count_characters(source_string):
     character_count = Counter(source_string)
     return character_count
@@ -162,35 +157,52 @@ def tabulate_character_counts(character_count_source, character_count_encrypted)
     total_source_count = 0
     total_encrypted_count = 0
     total_total_count = 0
+    chi_period = 0
     all_chars = set(character_count_source.keys()) | set(character_count_encrypted.keys())
     total_unique_chars = len(all_chars)
     print("Character\tSource\t\tEncrypted\tTotal")
     print("-------------------------------------------")
     for char in sorted(all_chars):
+            count_source = character_count_source.get(char, 0)
+            total_source_count += count_source
+            count_encrypted = character_count_encrypted.get(char, 0)
+            total_encrypted_count += count_encrypted
+            add = count_source + count_encrypted
+            total_total_count += add
+            if char.isprintable():
+                print(f"{char}\t\t{count_source}\t\t{count_encrypted}\t\t{add}")
+            else:
+                print(f"U+{ord(char):04X}\t\t{count_source}\t\t{count_encrypted}\t\t{add}")
+
+    for char in sorted(all_chars):
         count_source = character_count_source.get(char, 0)
-        total_source_count +=  count_source
         count_encrypted = character_count_encrypted.get(char, 0)
-        total_encrypted_count += count_encrypted
-        add = count_source + count_encrypted
-        total_total_count += add
-        if char.isprintable():
-            print(f"{char}\t\t{count_source}\t\t{count_encrypted}\t\t{add}")
-        else:
-            print(f"U+{ord(char):04X}\t\t{count_source}\t\t{count_encrypted}\t\t{add}")
+        add = count_source + count_encrypted 
+        club_total_s_total_e = (total_source_count + total_encrypted_count) / 2
+        chi_period += chi_period_calculate(count_source, count_encrypted, add, club_total_s_total_e, total_total_count)
+
+    degree_of_freedom = (total_unique_chars-1) * 1
     
     print("\nTotal unique characters:", total_unique_chars)
     print("\nTotal Source Count:", total_source_count)
     print("\nTotal Encrypted Count:", total_encrypted_count)
-    print("\nTotal Total Count:", total_total_count)
+    print("\nTotal Total Count: ", total_total_count)
+    print("\nChi Square Value: ",chi_period)
+    print("\nDegree of Freedom: ",degree_of_freedom)
 
+def chi_period_calculate(count_source, count_encrypted, add, club_total_s_total_e, total_total_count):
+        top = (count_source ** 2) + (count_encrypted ** 2)
+        bottom = (club_total_s_total_e * add) / total_total_count
+        chi_period = top / bottom
+        return chi_period
 
 def main():
-    input_file_path = 'TXT Files/input15.txt'  # Change to the actual input file path
+    input_file_path = 'CPP Files/input5.cpp'  # Change to the actual input file path
     input_file_size = os.path.getsize(input_file_path)
     print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
 
-    source_blocks = [string_to_binary(source_string[i:i + 2]) for i in range(0, len(source_string), 2)]
+    source_blocks = [string_to_binary(source_string[i:i + 8]) for i in range(0, len(source_string), 8)]
     max_sub_source_block_size = max(source_blocks, key=len)
     print(f'maximum block number of encryption: {len(max_sub_source_block_size)}\n')
 
@@ -252,12 +264,12 @@ def main():
         """print("Final Encrypted String:")"""
         final_encrypted_string = ''.join(encrypted_strings)
         encrypted_content = final_encrypted_string.encode('utf-8')  # Replace encrypted_ascii_var with your encrypted content
-        write_file('encrypted.txt', encrypted_content)
+        write_file('encrypted.cpp', encrypted_content)
 
         """print("\nFinal Decrypted String:")"""
         final_decrypted_string = ''.join(decrypted_strings)
         decrypted_content = final_decrypted_string.encode('utf-8')  # Replace decrypted_ascii_var with your decrypted content
-        write_file('decrypted.txt', decrypted_content)
+        write_file('decrypted.cpp', decrypted_content)
 
         # Count characters in the source string
         if source_string:
@@ -273,6 +285,7 @@ def main():
         else:
             print("No content to analyze.")
 
+        print(f'Input File Size: {input_file_size} bytes')
         print("\nTotal Encryption Time:", total_encryption_time, "seconds")
         print("Total Decryption Time:", total_decryption_time, "seconds")
         avg_accuracy = average_accuracy(source_blocks, decrypted_block_lists)
