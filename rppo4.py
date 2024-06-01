@@ -127,7 +127,7 @@ def write_file(file_path, content):
     
 def calculate_accuracy(list1, list2):
     if len(list1) != len(list2):
-        return "Lists are not the same size"
+        return 0
     
     num_elements = len(list1)
     num_same = sum(1 for i in range(num_elements) if list1[i] == list2[i])
@@ -197,12 +197,12 @@ def chi_period_calculate(count_source, count_encrypted, add, club_total_s_total_
         return chi_period
 
 def main():
-    input_file_path = 'CPP Files/input5.cpp'  # Change to the actual input file path
+    input_file_path = 'Txt Files/inpit12.txt'  # Change to the actual input file path
     input_file_size = os.path.getsize(input_file_path)
     print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
 
-    source_blocks = [string_to_binary(source_string[i:i + 8]) for i in range(0, len(source_string), 8)]
+    source_blocks = [string_to_binary(source_string[i:i + 1]) for i in range(0, len(source_string), 1)]
     max_sub_source_block_size = max(source_blocks, key=len)
     print(f'maximum block number of encryption: {len(max_sub_source_block_size)}\n')
 
@@ -264,12 +264,12 @@ def main():
         """print("Final Encrypted String:")"""
         final_encrypted_string = ''.join(encrypted_strings)
         encrypted_content = final_encrypted_string.encode('utf-8')  # Replace encrypted_ascii_var with your encrypted content
-        write_file('encrypted.cpp', encrypted_content)
+        write_file('encrypted.txt', encrypted_content)
 
         """print("\nFinal Decrypted String:")"""
         final_decrypted_string = ''.join(decrypted_strings)
         decrypted_content = final_decrypted_string.encode('utf-8')  # Replace decrypted_ascii_var with your decrypted content
-        write_file('decrypted.cpp', decrypted_content)
+        write_file('decrypted.txt', decrypted_content)
 
         # Count characters in the source string
         if source_string:
