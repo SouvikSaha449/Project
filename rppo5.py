@@ -1,6 +1,8 @@
 import os
 import sys
 import time
+import random
+import math
 from collections import Counter
 
 
@@ -116,18 +118,18 @@ def write_file(file_path, content):
     if file_extension in supported_extensions:
         if file_extension == '.txt':
             # For .txt files, writing content in text mode
-            with open(file_path, 'w', encoding='utf-8') as file:
+            with open(file_path, 'a', encoding='utf-8') as file:
                 file.write(content.decode('utf-8'))
         else:
             # For other supported extensions, writing content in binary mode
-            with open(file_path, 'wb') as file:
+            with open(file_path, 'ab') as file:
                 file.write(content)
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
     
 def calculate_accuracy(list1, list2):
     if len(list1) != len(list2):
-        return "Lists are not the same size"
+        return 0
     
     num_elements = len(list1)
     num_same = sum(1 for i in range(num_elements) if list1[i] == list2[i])
@@ -196,102 +198,246 @@ def chi_period_calculate(count_source, count_encrypted, add, club_total_s_total_
         chi_period = top / bottom
         return chi_period
 
+def divide_file_content(source_string):
+    file_size = len(source_string)
+    x = math.ceil(file_size / 4)  # Lower ceiling size for each part
+    y = file_size % 4  # Remainder
+
+    # Divide into 4 parts
+    list1 = source_string[:x + y]
+    list2 = source_string[x + y:x + y + x]
+    list3 = source_string[x + y + x:x + y + x + x]
+    list4 = source_string[x + y + x + x:]
+
+    return list1, list2, list3, list4
+
+def shuffle_list():
+    # Create the initial list
+    bit_lengths = [8, 16, 32, 64]
+
+    # Shuffle the list
+    random.shuffle(bit_lengths)
+
+    return bit_lengths
+
 def main():
-    input_file_path = 'CPP Files/input5.cpp'  # Change to the actual input file path
+    input_file_path = 'Txt Files/inpit12.txt'  # Change to the actual input file path
     input_file_size = os.path.getsize(input_file_path)
     print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
 
-    source_blocks = [string_to_binary(source_string[i:i + 8]) for i in range(0, len(source_string), 8)]
-    max_sub_source_block_size = max(source_blocks, key=len)
-    print(f'maximum block number of encryption: {len(max_sub_source_block_size)}\n')
+    num=int(input("Press 1 for normal rppo\nPress 2 for complex rppo\nEnter your choice: "))
 
-    encryption_number = int(input("Enter the block number of encryption: "))
+    if num==1:
 
-    encrypted_strings = []
-    decrypted_strings = []
-    decrypted_block_lists = []
-    total_encryption_time = 0
-    total_decryption_time = 0
+        source_blocks = [string_to_binary(source_string[i:i + 1]) for i in range(0, len(source_string), 1)]
+        max_sub_source_block_size = max(source_blocks, key=len)
+        print(f'maximum block number of encryption: {len(max_sub_source_block_size)}\n')
 
-    if encryption_number >= len(max_sub_source_block_size):
-        print("Encryption not possible")
-    else:
-        for block_number, source_block in enumerate(source_blocks):
-            num_iterations = len(max_sub_source_block_size)
+        encryption_number = int(input("Enter the block number of encryption: "))
 
-            padded_source_block, _ = pad_source_block(source_block, num_iterations)
+        encrypted_strings = []
+        decrypted_strings = []
+        decrypted_block_lists = []
+        total_encryption_time = 0
+        total_decryption_time = 0
 
-            intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
-
-            
-            """print(f'Block {block_number + 1}:')
-            print(f'Source String: {binary_to_string(padded_source_block)}')
-            print(f'Source Block (Binary): {source_block}\n')"""
-
-            # Encryption Time Calculation
-            start_time_encryption = time.time()
-            """for i, block in enumerate(intermediate_blocks[1:], start=1):
-                print(f'Encrypted Block {i}: {block}\n')"""
-
-            encrypted_block = encrypt(padded_source_block, encryption_number, num_iterations)
-            encrypted_string = binary_to_string(encrypted_block)
-
-            encrypted_strings.append(encrypted_string)
-            end_time_encryption = time.time()
-            total_encryption_time += (end_time_encryption - start_time_encryption)
-
-            """print(f'Encrypted Block (Binary): {encrypted_block}\n')
-            print(f'Encrypted String: {encrypted_string}\n')"""
-
-            # Decryption Time Calculation
-            start_time_decryption = time.time()
-            decrypted_blocks = decrypt(encrypted_block, encryption_number, num_iterations)
-
-            """for i, block in enumerate(decrypted_blocks):
-                decrypt_itr_number = i + encryption_number + 1
-                print(f'Decrypted Block {decrypt_itr_number}: {block}\n')"""
-
-            decrypted_string = binary_to_string(decrypted_blocks[-1])
-            decrypted_block_lists.append(decrypted_blocks[-1])
-            decrypted_strings.append(decrypted_string)
-            end_time_decryption = time.time()
-            total_decryption_time += (end_time_decryption - start_time_decryption)
-
-            """print(f'Decrypted String: {decrypted_string}\n')"""
-
-        
-        """print("Final Encrypted String:")"""
-        final_encrypted_string = ''.join(encrypted_strings)
-        encrypted_content = final_encrypted_string.encode('utf-8')  # Replace encrypted_ascii_var with your encrypted content
-        write_file('encrypted.cpp', encrypted_content)
-
-        """print("\nFinal Decrypted String:")"""
-        final_decrypted_string = ''.join(decrypted_strings)
-        decrypted_content = final_decrypted_string.encode('utf-8')  # Replace decrypted_ascii_var with your decrypted content
-        write_file('decrypted.cpp', decrypted_content)
-
-        # Count characters in the source string
-        if source_string:
-            character_count_source = count_characters(source_string)
-            
-            # Count characters in the encrypted string
-            encrypted_string = ''.join(encrypted_strings)
-            character_count_encrypted = count_characters(encrypted_string)
-
-            # Tabulate character counts
-            print("\nCharacter Counts:")
-            tabulate_character_counts(character_count_source, character_count_encrypted)
+        if encryption_number >= len(max_sub_source_block_size):
+            print("Encryption not possible")
         else:
-            print("No content to analyze.")
+            for block_number, source_block in enumerate(source_blocks):
+                num_iterations = len(max_sub_source_block_size)
 
-        print(f'Input File Size: {input_file_size} bytes')
-        print("\nTotal Encryption Time:", total_encryption_time, "seconds")
-        print("Total Decryption Time:", total_decryption_time, "seconds")
-        avg_accuracy = average_accuracy(source_blocks, decrypted_block_lists)
-        print("Average accuracy:", avg_accuracy)
-        print("Total XOR operations during encryption:", encryption_xor_count)
-        print("Total XOR operations during decryption:", decryption_xor_count)
+                padded_source_block, _ = pad_source_block(source_block, num_iterations)
+
+                intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
+
+                
+                """print(f'Block {block_number + 1}:')
+                print(f'Source String: {binary_to_string(padded_source_block)}')
+                print(f'Source Block (Binary): {source_block}\n')"""
+
+                # Encryption Time Calculation
+                start_time_encryption = time.time()
+                """for i, block in enumerate(intermediate_blocks[1:], start=1):
+                    print(f'Encrypted Block {i}: {block}\n')"""
+
+                encrypted_block = encrypt(padded_source_block, encryption_number, num_iterations)
+                encrypted_string = binary_to_string(encrypted_block)
+
+                encrypted_strings.append(encrypted_string)
+                end_time_encryption = time.time()
+                total_encryption_time += (end_time_encryption - start_time_encryption)
+
+                """print(f'Encrypted Block (Binary): {encrypted_block}\n')
+                print(f'Encrypted String: {encrypted_string}\n')"""
+
+                # Decryption Time Calculation
+                start_time_decryption = time.time()
+                decrypted_blocks = decrypt(encrypted_block, encryption_number, num_iterations)
+
+                """for i, block in enumerate(decrypted_blocks):
+                    decrypt_itr_number = i + encryption_number + 1
+                    print(f'Decrypted Block {decrypt_itr_number}: {block}\n')"""
+
+                decrypted_string = binary_to_string(decrypted_blocks[-1])
+                decrypted_block_lists.append(decrypted_blocks[-1])
+                decrypted_strings.append(decrypted_string)
+                end_time_decryption = time.time()
+                total_decryption_time += (end_time_decryption - start_time_decryption)
+
+                """print(f'Decrypted String: {decrypted_string}\n')"""
+
+            
+            """print("Final Encrypted String:")"""
+            final_encrypted_string = ''.join(encrypted_strings)
+            encrypted_content = final_encrypted_string.encode('utf-8')  # Replace encrypted_ascii_var with your encrypted content
+            write_file('encrypted.txt', encrypted_content)
+
+            """print("\nFinal Decrypted String:")"""
+            final_decrypted_string = ''.join(decrypted_strings)
+            decrypted_content = final_decrypted_string.encode('utf-8')  # Replace decrypted_ascii_var with your decrypted content
+            write_file('decrypted.txt', decrypted_content)
+
+            # Count characters in the source string
+            if source_string:
+                character_count_source = count_characters(source_string)
+                
+                # Count characters in the encrypted string
+                encrypted_string = ''.join(encrypted_strings)
+                character_count_encrypted = count_characters(encrypted_string)
+
+                # Tabulate character counts
+                print("\nCharacter Counts:")
+                tabulate_character_counts(character_count_source, character_count_encrypted)
+            else:
+                print("No content to analyze.")
+
+            print(f'Input File Size: {input_file_size} bytes')
+            print("\nTotal Encryption Time:", total_encryption_time, "seconds")
+            print("Total Decryption Time:", total_decryption_time, "seconds")
+            avg_accuracy = average_accuracy(source_blocks, decrypted_block_lists)
+            print("Average accuracy:", avg_accuracy)
+            print("Total XOR operations during encryption:", encryption_xor_count)
+            print("Total XOR operations during decryption:", decryption_xor_count)
+
+    elif num==2:
+         if source_string is not None:
+            list1, list2, list3, list4 = divide_file_content(source_string)
+
+            print(f'List 1 (Size: {len(list1)}):\n{list1}')
+            print(f'List 2 (Size: {len(list2)}):\n{list2}')
+            print(f'List 3 (Size: {len(list3)}):\n{list3}')
+            print(f'List 4 (Size: {len(list4)}):\n{list4}')
+
+            list_bulk = [list1, list2, list3, list4]
+            print(list_bulk)
+
+            shuffled_bit_lengths = shuffle_list()
+            print(f"Shuffled list: {shuffled_bit_lengths}")
+
+            n=0
+            list_bulk2 = []
+
+            for item in list_bulk:
+                
+                if shuffled_bit_lengths[n] == 8:
+                    source_blocks = [string_to_binary(item[i:i + 1]) for i in range(0, len(item), 1)]
+
+                elif shuffled_bit_lengths[n] == 16:
+                    source_blocks = [string_to_binary(item[i:i + 2]) for i in range(0, len(item), 2)]
+
+                elif shuffled_bit_lengths[n] == 32:
+                    source_blocks = [string_to_binary(item[i:i + 4]) for i in range(0, len(item), 4)]
+
+                else:
+                    source_blocks = [string_to_binary(item[i:i + 8]) for i in range(0, len(item), 8)]
+                n+=1
+                list_bulk2.append(source_blocks)
+            # print("This is list bulk2\n")
+            # print(list_bulk2)
+
+            shuffled_list_dict = {
+                shuffled_bit_lengths[0]: list_bulk2[0],
+                shuffled_bit_lengths[1]: list_bulk2[1],
+                shuffled_bit_lengths[2]: list_bulk2[2],
+                shuffled_bit_lengths[3]: list_bulk2[3]
+            }
+
+            print("\n")
+
+            print(shuffled_list_dict)
+
+            print("Maximum encrption block number can't be more than 7")
+
+            encryption_number = int(input("Enter the block number of encryption: "))
+
+            if encryption_number<=7:
+
+                for key,value in shuffled_list_dict.items():
+ 
+                    encrypted_strings = []
+                    decrypted_strings = []
+                    decrypted_block_lists = []
+                    total_encryption_time = 0
+                    total_decryption_time = 0
+
+                    source_block = value
+
+                    for block_number, source_block in enumerate(source_blocks):
+                        num_iterations = key
+
+                        padded_source_block, _ = pad_source_block(source_block, num_iterations)
+
+                        intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
+
+                        
+                        """print(f'Block {block_number + 1}:')
+                        print(f'Source String: {binary_to_string(padded_source_block)}')
+                        print(f'Source Block (Binary): {source_block}\n')"""
+
+                        # Encryption Time Calculation
+                        start_time_encryption = time.time()
+                        """for i, block in enumerate(intermediate_blocks[1:], start=1):
+                            print(f'Encrypted Block {i}: {block}\n')"""
+
+                        encrypted_block = encrypt(padded_source_block, encryption_number, num_iterations)
+                        encrypted_string = binary_to_string(encrypted_block)
+
+                        encrypted_strings.append(encrypted_string)
+                        end_time_encryption = time.time()
+                        total_encryption_time += (end_time_encryption - start_time_encryption)
+
+                        """print(f'Encrypted Block (Binary): {encrypted_block}\n')
+                        print(f'Encrypted String: {encrypted_string}\n')"""
+
+                        # Decryption Time Calculation
+                        start_time_decryption = time.time()
+                        decrypted_blocks = decrypt(encrypted_block, encryption_number, num_iterations)
+
+                        """for i, block in enumerate(decrypted_blocks):
+                            decrypt_itr_number = i + encryption_number + 1
+                            print(f'Decrypted Block {decrypt_itr_number}: {block}\n')"""
+
+                        decrypted_string = binary_to_string(decrypted_blocks[-1])
+                        decrypted_block_lists.append(decrypted_blocks[-1])
+                        decrypted_strings.append(decrypted_string)
+                        end_time_decryption = time.time()
+                        total_decryption_time += (end_time_decryption - start_time_decryption)
+
+                        """print(f'Decrypted String: {decrypted_string}\n')"""
+
+                    
+                        """print("Final Encrypted String:")"""
+                    final_encrypted_string = ''.join(encrypted_strings)
+                    encrypted_content = final_encrypted_string.encode('utf-8')  # Replace encrypted_ascii_var with your encrypted content
+                    write_file('encrypted.txt', encrypted_content)
+
+                    """print("\nFinal Decrypted String:")"""
+                    final_decrypted_string = ''.join(decrypted_strings)
+                    decrypted_content = final_decrypted_string.encode('utf-8')  # Replace decrypted_ascii_var with your decrypted content
+                    write_file('decrypted.txt', decrypted_content)
+
 
 if __name__ == "__main__":
     main()
