@@ -193,7 +193,7 @@ def tabulate_character_counts(character_count_source, character_count_encrypted)
     print("\nDegree of Freedom: ",degree_of_freedom)
 
 def chi_period_calculate(count_source, count_encrypted, add, club_total_s_total_e, total_total_count):
-        top = (count_source ** 2) + (count_encrypted ** 2)
+        top = (count_source * 2) + (count_encrypted * 2)
         bottom = (club_total_s_total_e * add) / total_total_count
         chi_period = top / bottom
         return chi_period
@@ -220,11 +220,25 @@ def shuffle_list():
 
     return bit_lengths
 
+def count_spaces(input_string):
+    space_positions = {}
+    
+    # Iterate through the string and count spaces
+    for index, char in enumerate(input_string):
+        if char == ' ':
+            if index in space_positions:
+                space_positions[index] += 1
+            else:
+                space_positions[index] = 1
+    
+    return space_positions
+
 def main():
-    input_file_path = 'Txt Files/inpit12.txt'  # Change to the actual input file path
+    input_file_path = 'Txt Files/input.txt'  # Change to the actual input file path
     input_file_size = os.path.getsize(input_file_path)
     print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
+    
 
     num=int(input("Press 1 for normal rppo\nPress 2 for complex rppo\nEnter your choice: "))
 
@@ -232,6 +246,15 @@ def main():
 
         source_blocks = [string_to_binary(source_string[i:i + 1]) for i in range(0, len(source_string), 1)]
         max_sub_source_block_size = max(source_blocks, key=len)
+
+# refrshing files by deleting their content
+
+        with open("encrypted.txt","w") as file:
+            pass
+
+        with open("decrypted.txt","w") as file:
+            pass
+
         print(f'maximum block number of encryption: {len(max_sub_source_block_size)}\n')
 
         encryption_number = int(input("Enter the block number of encryption: "))
@@ -249,6 +272,7 @@ def main():
                 num_iterations = len(max_sub_source_block_size)
 
                 padded_source_block, _ = pad_source_block(source_block, num_iterations)
+                
 
                 intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
 
@@ -322,19 +346,20 @@ def main():
             print("Total XOR operations during decryption:", decryption_xor_count)
 
     elif num==2:
-         if source_string is not None:
+        
+        if source_string is not None:
             list1, list2, list3, list4 = divide_file_content(source_string)
 
-            print(f'List 1 (Size: {len(list1)}):\n{list1}')
-            print(f'List 2 (Size: {len(list2)}):\n{list2}')
-            print(f'List 3 (Size: {len(list3)}):\n{list3}')
-            print(f'List 4 (Size: {len(list4)}):\n{list4}')
+            # print(f'List 1 (Size: {len(list1)}):\n{list1}')
+            # print(f'List 2 (Size: {len(list2)}):\n{list2}')
+            # print(f'List 3 (Size: {len(list3)}):\n{list3}')
+            # print(f'List 4 (Size: {len(list4)}):\n{list4}')
 
             list_bulk = [list1, list2, list3, list4]
-            print(list_bulk)
+            # print(list_bulk)
 
             shuffled_bit_lengths = shuffle_list()
-            print(f"Shuffled list: {shuffled_bit_lengths}")
+            # print(f"Shuffled list: {shuffled_bit_lengths}")
 
             n=0
             list_bulk2 = []
@@ -366,11 +391,23 @@ def main():
 
             print("\n")
 
-            print(shuffled_list_dict)
+            # print(shuffled_list_dict)
+
+         # refrshing files by deleting their content
+
+            with open("complex_encrypted.txt","w") as file:
+                pass
+
+            with open("complex_decrypted.txt","w") as file:
+                pass
+
 
             print("Maximum encrption block number can't be more than 7")
 
             encryption_number = int(input("Enter the block number of encryption: "))
+            source_blocks=[]
+            padded_source_strings = ""
+
 
             if encryption_number<=7:
 
@@ -382,12 +419,22 @@ def main():
                     total_encryption_time = 0
                     total_decryption_time = 0
 
-                    source_block = value
+                    source_blocks = value
+                    source_block = []
+                    # print(value)
+                    # for binary in source_blocks:
+                    #     complex_source_strings+=binary_to_string(binary)
+                    # print(complex_source_strings)
+
 
                     for block_number, source_block in enumerate(source_blocks):
                         num_iterations = key
 
                         padded_source_block, _ = pad_source_block(source_block, num_iterations)
+                        padded_source_strings+=binary_to_string(source_block)
+                        
+                        # print("Padded Source Block")
+                        # print(padded_source_strings)
 
                         intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
 
@@ -407,6 +454,7 @@ def main():
                         encrypted_strings.append(encrypted_string)
                         end_time_encryption = time.time()
                         total_encryption_time += (end_time_encryption - start_time_encryption)
+                        # complex_encryption_time += total_encryption_time
 
                         """print(f'Encrypted Block (Binary): {encrypted_block}\n')
                         print(f'Encrypted String: {encrypted_string}\n')"""
@@ -424,19 +472,45 @@ def main():
                         decrypted_strings.append(decrypted_string)
                         end_time_decryption = time.time()
                         total_decryption_time += (end_time_decryption - start_time_decryption)
+                        # complex_decryption_time += total_decryption_time
 
-                        """print(f'Decrypted String: {decrypted_string}\n')"""
+                        # print(f'Decrypted String: {decrypted_string}\n')
 
                     
-                        """print("Final Encrypted String:")"""
+                    # print("Final Encrypted String:")
                     final_encrypted_string = ''.join(encrypted_strings)
+                    # print(final_encrypted_string)
                     encrypted_content = final_encrypted_string.encode('utf-8')  # Replace encrypted_ascii_var with your encrypted content
-                    write_file('encrypted.txt', encrypted_content)
+                    write_file('complex_encrypted.txt', encrypted_content)
 
-                    """print("\nFinal Decrypted String:")"""
+                    # print("\nFinal Decrypted String:")
                     final_decrypted_string = ''.join(decrypted_strings)
+                    # print(final_decrypted_string)
                     decrypted_content = final_decrypted_string.encode('utf-8')  # Replace decrypted_ascii_var with your decrypted content
-                    write_file('decrypted.txt', decrypted_content)
+                    write_file('complex_decrypted.txt', decrypted_content)
+                    spaces = count_spaces(source_string)
+                
+                
+                if source_string:
+                    character_count_source = count_characters(source_string)
+                    
+                    # Count characters in the encrypted string
+                    encrypted_string = ''.join(encrypted_strings)
+                    character_count_encrypted = count_characters(encrypted_string)
+
+                    # Tabulate character counts
+                    print("\nCharacter Counts:")
+                    tabulate_character_counts(character_count_source, character_count_encrypted)
+                else:
+                    print("No content to analyze.")   
+                print("\n\nTotal Encryption Time: ", total_encryption_time)
+                print("\n\nTotal Decryption Time: ", total_decryption_time)
+                
+                print(f'Input File Size: {input_file_size} bytes')
+                avg_accuracy = average_accuracy(source_blocks, decrypted_block_lists)
+                print("Average accuracy:", avg_accuracy)
+                print("Total XOR operations during encryption:", encryption_xor_count)
+                print("Total XOR operations during decryption:", decryption_xor_count)
 
 
 if __name__ == "__main__":
