@@ -1,0 +1,137 @@
+ete encryption_number 2 ache. eta tor pdf e dibi. 5 itr
+
+
+
+
+
+itr1
+
+
+Total unique characters: 213
+
+Total Source Count: 33258
+
+Total Encrypted Count: 8312
+
+Total Total Count:  41570
+
+Chi Square Value:  75798.89329317347
+
+Degree of Freedom:  212
+
+
+Total Encryption Time:  0.24652743339538574
+
+
+Total Decryption Time:  6.9284515380859375
+Input File Size: 33668 bytes
+Average accuracy: 99.90375360923966
+Total XOR operations during encryption: 16496752
+Total XOR operations during decryption: 176649512
+
+
+
+itr2
+
+
+
+Total unique characters: 206
+
+Total Source Count: 33258
+
+Total Encrypted Count: 8312
+
+Total Total Count:  41570
+
+Chi Square Value:  74924.75170280463
+
+Degree of Freedom:  205
+
+
+Total Encryption Time:  0.16517376899719238
+
+
+Total Decryption Time:  1.7758724689483643
+Input File Size: 33668 bytes
+Average accuracy: 99.95187680461983
+Total XOR operations during encryption: 16501136
+Total XOR operations during decryption: 176747224
+
+
+
+itr3
+
+Chi Square Value:  72698.16264969455
+
+Degree of Freedom:  172
+
+
+Total Encryption Time:  0.10584473609924316
+
+
+Total Decryption Time:  0.6265060901641846
+Input File Size: 33668 bytes
+Average accuracy: 99.97593840230991
+Total XOR operations during encryption: 16502160
+Total XOR operations during decryption: 176759256
+
+
+
+itr4
+
+
+
+Total unique characters: 89
+
+Total Source Count: 33258
+
+Total Encrypted Count: 8311
+
+Total Total Count:  41569
+
+Chi Square Value:  68893.01188698097
+
+Degree of Freedom:  88
+
+
+Total Encryption Time:  0.061490774154663086
+
+
+Total Decryption Time:  0.17810344696044922
+Input File Size: 33668 bytes
+Average accuracy: 100.0
+Total XOR operations during encryption: 16504496
+Total XOR operations during decryption: 176777608
+
+
+
+itr5
+
+
+
+Total unique characters: 89
+
+Total Source Count: 33258
+
+Total Encrypted Count: 8311
+
+Total Total Count:  41569
+
+Chi Square Value:  68893.01188698097
+
+Degree of Freedom:  88
+
+
+Total Encryption Time:  0.07134318351745605
+
+
+Total Decryption Time:  0.19594407081604004
+Input File Size: 33668 bytes
+Average accuracy: 100.0
+Total XOR operations during encryption: 16504496
+Total XOR operations during decryption: 176777608
+
+Average Encryption Time:- 0.13007592
+Average Decryption Time:- 1.94097546
+Average CHI Square:- 68893.0118869
+Average Degree of Freedom:- 153
