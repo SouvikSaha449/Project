@@ -234,7 +234,7 @@ def count_spaces(input_string):
     return space_positions
 
 def main():
-    input_file_path = 'Txt Files/input2.txt'  # Change to the actual input file path
+    input_file_path = 'TXT Files/inpit12.txt'  # Change to the actual input file path
     input_file_size = os.path.getsize(input_file_path)
     print(f'Input File Size: {input_file_size} bytes')
     source_string = read_file_content(input_file_path)
@@ -244,7 +244,7 @@ def main():
 
     if num==1:
 
-        source_blocks = [string_to_binary(source_string[i:i + 2]) for i in range(0, len(source_string), 2)]
+        source_blocks = [string_to_binary(source_string[i:i + 1]) for i in range(0, len(source_string), 1)]
         max_sub_source_block_size = max(source_blocks, key=len)
 
         # refrshing files by deleting their content
@@ -277,14 +277,14 @@ def main():
                 intermediate_blocks = generate_blocks(padded_source_block, num_iterations, encryption_number)
 
                 
-                """print(f'Block {block_number + 1}:')
+                print(f'Block {block_number + 1}:')
                 print(f'Source String: {binary_to_string(padded_source_block)}')
-                print(f'Source Block (Binary): {source_block}\n')"""
+                print(f'Source Block (Binary): {source_block}\n')
 
                 # Encryption Time Calculation
                 start_time_encryption = time.time()
-                """for i, block in enumerate(intermediate_blocks[1:], start=1):
-                    print(f'Encrypted Block {i}: {block}\n')"""
+                for i, block in enumerate(intermediate_blocks[1:], start=1):
+                    print(f'Encrypted Block {i}: {block}\n')
 
                 encrypted_block = encrypt(padded_source_block, encryption_number, num_iterations)
                 encrypted_string = binary_to_string(encrypted_block)
@@ -293,16 +293,16 @@ def main():
                 end_time_encryption = time.time()
                 total_encryption_time += (end_time_encryption - start_time_encryption)
 
-                """print(f'Encrypted Block (Binary): {encrypted_block}\n')
-                print(f'Encrypted String: {encrypted_string}\n')"""
+                print(f'Encrypted Block (Binary): {encrypted_block}\n')
+                print(f'Encrypted String: {encrypted_string}\n')
 
                 # Decryption Time Calculation
                 start_time_decryption = time.time()
                 decrypted_blocks = decrypt(encrypted_block, encryption_number, num_iterations)
 
-                """for i, block in enumerate(decrypted_blocks):
+                for i, block in enumerate(decrypted_blocks):
                     decrypt_itr_number = i + encryption_number + 1
-                    print(f'Decrypted Block {decrypt_itr_number}: {block}\n')"""
+                    print(f'Decrypted Block {decrypt_itr_number}: {block}\n')
 
                 decrypted_string = binary_to_string(decrypted_blocks[-1])
                 decrypted_block_lists.append(decrypted_blocks[-1])
@@ -310,7 +310,7 @@ def main():
                 end_time_decryption = time.time()
                 total_decryption_time += (end_time_decryption - start_time_decryption)
 
-                """print(f'Decrypted String: {decrypted_string}\n')"""
+                print(f'Decrypted String: {decrypted_string}\n')
 
             
             """print("Final Encrypted String:")"""
@@ -395,10 +395,10 @@ def main():
 
          # refrshing files by deleting their content
 
-            with open("complex_encrypted.txt","w") as file:
+            with open("complex_encrypted.sys","w") as file:
                 pass
 
-            with open("complex_decrypted.txt","w") as file:
+            with open("complex_decrypted.sys","w") as file:
                 pass
 
 
@@ -481,13 +481,13 @@ def main():
                     final_encrypted_string = ''.join(encrypted_strings)
                     # print(final_encrypted_string)
                     encrypted_content = final_encrypted_string.encode('utf-8')  # Replace encrypted_ascii_var with your encrypted content
-                    write_file('complex_encrypted.txt', encrypted_content)
+                    write_file('complex_encrypted.cpp', encrypted_content)
 
                     # print("\nFinal Decrypted String:")
                     final_decrypted_string = ''.join(decrypted_strings)
                     # print(final_decrypted_string)
                     decrypted_content = final_decrypted_string.encode('utf-8')  # Replace decrypted_ascii_var with your decrypted content
-                    write_file('complex_decrypted.txt', decrypted_content)
+                    write_file('complex_decrypted.cpp', decrypted_content)
                     spaces = count_spaces(source_string)
                 
                 
